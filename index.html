@@ -3,8 +3,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" href="elec.ico" type="image/x-icon">
-    <link rel="icon" type="image/png" sizes="192x192" href="cropped.png">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prepaid Electricity Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -135,6 +134,17 @@
               <path d="M17 4v16"/>
           </svg>
       );
+      
+      const ClipboardListIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <path d="M12 11h4"/>
+              <path d="M12 16h4"/>
+              <path d="M8 11h.01"/>
+              <path d="M8 16h.01"/>
+          </svg>
+      );
 
       // =============================================
       // COMPONENTS/CONFIRMMODAL.TSX
@@ -226,12 +236,12 @@
               unit=""
               color="bg-red-500/80"
             />
-            <MetricCard 
-              icon={<TrendingUpIcon className="w-6 h-6 text-white"/>} 
-              title="Cost / Unit" 
-              value={`R ${metrics.costPerUnit.toFixed(2)}`} 
-              unit="avg"
-              color="bg-purple-500/80"
+             <MetricCard 
+              icon={<ClipboardListIcon className="w-6 h-6 text-white"/>} 
+              title="Monthly Use" 
+              value={metrics.monthlyConsumption.toFixed(2)} 
+              unit="units"
+              color="bg-teal-500/80"
             />
             <MetricCard 
               icon={<CalendarIcon className="w-6 h-6 text-white"/>} 
@@ -376,6 +386,107 @@
       };
 
       // =============================================
+      // COMPONENTS/COSTTRENDCHART.TSX
+      // =============================================
+      const CostTrendChart = ({ data }) => {
+        const width = 500;
+        const height = 200;
+        const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        const dates = useMemo(() => data.map(d => new Date(d.date)), [data]);
+        const values = useMemo(() => data.map(d => d.value), [data]);
+
+        const yMin = useMemo(() => Math.min(...values) * 0.95, [values]);
+        const yMax = useMemo(() => Math.max(...values) * 1.05, [values]);
+
+        const xScale = useCallback((date) => {
+            const minTime = dates[0].getTime();
+            const maxTime = dates[dates.length - 1].getTime();
+            if (maxTime === minTime) return margin.left;
+            return margin.left + ((date.getTime() - minTime) / (maxTime - minTime)) * innerWidth;
+        }, [dates, innerWidth, margin.left]);
+        
+        const yScale = useCallback((value) => {
+            if (yMax === yMin) return margin.top + innerHeight / 2;
+            return margin.top + innerHeight - ((value - yMin) / (yMax - yMin)) * innerHeight;
+        }, [yMin, yMax, innerHeight, margin.top]);
+
+        const pathData = useMemo(() => data.map((d, i) => {
+            const x = xScale(dates[i]);
+            const y = yScale(d.value);
+            return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+        }).join(' '), [data, dates, xScale, yScale]);
+
+        const yAxisTicks = useMemo(() => {
+            if (yMin === yMax) return [yMin];
+            return Array.from({ length: 5 }, (_, i) => yMin + (i * (yMax - yMin)) / 4)
+        }, [yMin, yMax]);
+
+        const xAxisTicks = useMemo(() => {
+            const ticks = data.map((d,i) => ({ date: dates[i], x: xScale(dates[i]) }));
+            const reducedTicks = [];
+            if (ticks.length > 0) {
+                reducedTicks.push(ticks[0]);
+                let lastPushedX = ticks[0].x;
+                for (let i = 1; i < ticks.length - 1; i++) {
+                    if (ticks[i].x - lastPushedX > 60) {
+                        reducedTicks.push(ticks[i]);
+                        lastPushedX = ticks[i].x;
+                    }
+                }
+                if (ticks.length > 1) {
+                    const lastTick = ticks[ticks.length - 1];
+                    if(lastTick.x - lastPushedX > 60 || reducedTicks.length === 1) {
+                       reducedTicks.push(lastTick);
+                    }
+                }
+            }
+            return reducedTicks;
+        }, [data, dates, xScale]);
+
+        return (
+            <div className="mt-8 bg-gray-800 rounded-lg p-4 border border-gray-700 animate-fade-in">
+              <h3 className="text-lg font-semibold text-gray-200 mb-4">Cost/Unit Trend</h3>
+              <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" aria-labelledby="chart-title" role="img">
+                  <title id="chart-title">A line chart showing the trend of cost per unit of electricity over time.</title>
+                  <g aria-hidden="true">
+                      {/* Y-axis grid lines and labels */}
+                      {yAxisTicks.map((tick, i) => (
+                      <g key={i} transform={`translate(0, ${yScale(tick)})`}>
+                          <line x1={margin.left} x2={width - margin.right} stroke="currentColor" className="text-gray-700" strokeWidth="0.5" strokeDasharray="2,2" />
+                          <text x={margin.left - 8} y="3" textAnchor="end" className="text-gray-400" fontSize="10">
+                          {`R${tick.toFixed(2)}`}
+                          </text>
+                      </g>
+                      ))}
+                      
+                      {/* X-axis labels */}
+                      {xAxisTicks.map(({date, x}, i) => (
+                          <text key={i} x={x} y={height - margin.bottom + 15} textAnchor="middle" className="text-gray-400" fontSize="10">
+                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </text>
+                      ))}
+
+                      {/* Line Path */}
+                      <path d={pathData} fill="none" stroke="#3b82f6" strokeWidth="2" />
+                      
+                      {/* Data points */}
+                      {data.map((d, i) => (
+                      <g key={i} transform={`translate(${xScale(dates[i])}, ${yScale(d.value)})`}>
+                        <circle r="3" fill="#3b82f6" stroke="#1f2937" strokeWidth="2">
+                           <title>{`R ${d.value.toFixed(2)} on ${dates[i].toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`}</title>
+                        </circle>
+                      </g>
+                      ))}
+                  </g>
+              </svg>
+            </div>
+        );
+      };
+
+      // =============================================
       // APP.TSX
       // =============================================
       const TimelineItem = ({ reading, isFirst, isLast, unitsConsumed, daysSinceLast }) => {
@@ -450,6 +561,7 @@
               dailyConsumption: 0,
               costPerUnit: 0,
               monthlyCost: 0,
+              monthlyConsumption: 0,
               estimatedDaysLeft: Infinity,
               calculatedCurrentUnits: latestReadingUnits,
             };
@@ -481,13 +593,27 @@
           const dailyExpense = totalDaysOverall > 0 ? totalRands / totalDaysOverall : 0;
           const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
           const monthlyCost = dailyExpense * 30.44;
+          const monthlyConsumption = dailyConsumption * 30.44;
 
           const latestReading = chronoSorted[chronoSorted.length-1];
           const daysSinceLastReading = (new Date().getTime() - new Date(latestReading.date).getTime()) / (1000 * 3600 * 24);
           const calculatedCurrentUnits = Math.max(0, latestReading.newReading - (dailyConsumption * daysSinceLastReading));
           const estimatedDaysLeft = dailyConsumption > 0 ? calculatedCurrentUnits / dailyConsumption : Infinity;
 
-          return { dailyExpense, dailyConsumption, costPerUnit, monthlyCost, estimatedDaysLeft, calculatedCurrentUnits };
+          return { dailyExpense, dailyConsumption, costPerUnit, monthlyCost, estimatedDaysLeft, calculatedCurrentUnits, monthlyConsumption };
+        }, [readings]);
+
+        const chartData = useMemo(() => {
+          if (readings.length < 2) return [];
+          const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          return chronoSorted.map(r => {
+            const unitsLoaded = r.newReading - r.oldReading;
+            if (unitsLoaded <= 0) return null;
+            return {
+              date: r.date,
+              value: r.amountLoaded / unitsLoaded
+            };
+          }).filter(Boolean);
         }, [readings]);
 
         const handleAddReading = useCallback((newReading) => {
@@ -548,6 +674,8 @@
 
               <main>
                 <MetricsDashboard metrics={metrics} />
+                
+                {chartData.length > 1 && <CostTrendChart data={chartData} />}
                 
                 <div className="flex justify-between items-center mt-8 mb-4 border-b-2 border-gray-700 pb-2">
                   <h2 className="text-2xl font-semibold text-gray-200">
@@ -652,6 +780,3 @@
     </script>
   </body>
 </html>
-
-
-

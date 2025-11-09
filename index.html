@@ -386,68 +386,99 @@
       };
 
       // =============================================
+      // COMPONENTS/DATERANGEFILTER.TSX
+      // =============================================
+      const DateRangeFilter = ({ selectedRange, onSelectRange }) => {
+        const ranges = [
+            { key: 'all', label: 'All' },
+            { key: '6m', label: '6 Months' },
+            { key: '1y', label: '1 Year' }
+        ];
+
+        return (
+            <div className="mt-8 bg-gray-800 rounded-lg p-2 flex justify-center space-x-2 border border-gray-700 animate-fade-in">
+                {ranges.map(({ key, label }) => (
+                    <button
+                        key={key}
+                        onClick={() => onSelectRange(key)}
+                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors w-full sm:w-auto ${
+                            selectedRange === key
+                                ? 'bg-brand-blue-600 text-white shadow'
+                                : 'bg-transparent text-gray-400 hover:bg-gray-700 hover:text-white'
+                        }`}
+                        aria-pressed={selectedRange === key}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+        );
+      };
+
+      // =============================================
       // COMPONENTS/COSTTRENDCHART.TSX
       // =============================================
-      const CostTrendChart = ({ data, averageCost }) => {
+      const CostTrendChart = ({ data, averageCost, domain }) => {
         const width = 500;
         const height = 200;
         const margin = { top: 20, right: 20, bottom: 40, left: 50 };
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
 
-        const dates = useMemo(() => data.map(d => new Date(d.date)), [data]);
         const values = useMemo(() => data.map(d => d.value), [data]);
-
-        const yMin = useMemo(() => Math.min(...values) * 0.95, [values]);
-        const yMax = useMemo(() => Math.max(...values) * 1.05, [values]);
+        const yMin = useMemo(() => data.length > 0 ? Math.min(...values) * 0.95 : 0, [values, data.length]);
+        const yMax = useMemo(() => data.length > 0 ? Math.max(...values) * 1.05 : 1, [values, data.length]);
 
         const xScale = useCallback((date) => {
-            const minTime = dates[0].getTime();
-            const maxTime = dates[dates.length - 1].getTime();
-            if (maxTime === minTime) return margin.left;
+            if (!domain) return 0;
+            const [minTime, maxTime] = [domain[0].getTime(), domain[1].getTime()];
+            if (maxTime === minTime) return margin.left + innerWidth / 2;
             return margin.left + ((date.getTime() - minTime) / (maxTime - minTime)) * innerWidth;
-        }, [dates, innerWidth, margin.left]);
+        }, [domain, innerWidth, margin.left]);
         
         const yScale = useCallback((value) => {
             if (yMax === yMin) return margin.top + innerHeight / 2;
             return margin.top + innerHeight - ((value - yMin) / (yMax - yMin)) * innerHeight;
         }, [yMin, yMax, innerHeight, margin.top]);
 
-        const pathData = useMemo(() => data.map((d, i) => {
-            const x = xScale(dates[i]);
-            const y = yScale(d.value);
-            return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-        }).join(' '), [data, dates, xScale, yScale]);
+        const pathData = useMemo(() => {
+            if (data.length < 2) return '';
+            return data.map((d, i) => {
+                const x = xScale(new Date(d.date));
+                const y = yScale(d.value);
+                return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+            }).join(' ');
+        }, [data, xScale, yScale]);
 
         const yAxisTicks = useMemo(() => {
             if (yMin === yMax) return [yMin];
             return Array.from({ length: 5 }, (_, i) => yMin + (i * (yMax - yMin)) / 4)
         }, [yMin, yMax]);
 
+        const formatTickLabel = useCallback((date) => {
+            if (!domain) return '';
+            const [start, end] = domain;
+            const durationDays = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
+            if (durationDays > 365 * 1.5) return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }, [domain]);
+        
         const xAxisTicks = useMemo(() => {
-            const ticks = data.map((d,i) => ({ date: dates[i], x: xScale(dates[i]) }));
-            const reducedTicks = [];
-            if (ticks.length > 0) {
-                reducedTicks.push(ticks[0]);
-                let lastPushedX = ticks[0].x;
-                for (let i = 1; i < ticks.length - 1; i++) {
-                    if (ticks[i].x - lastPushedX > 60) {
-                        reducedTicks.push(ticks[i]);
-                        lastPushedX = ticks[i].x;
-                    }
-                }
-                if (ticks.length > 1) {
-                    const lastTick = ticks[ticks.length - 1];
-                    if(lastTick.x - lastPushedX > 60 || reducedTicks.length === 1) {
-                       reducedTicks.push(lastTick);
-                    }
-                }
+            if (!domain) return [];
+            const [start, end] = domain;
+            const tickCount = Math.max(2, Math.floor(innerWidth / 80));
+            const ticks = [];
+            const interval = (end.getTime() - start.getTime()) / (tickCount - 1);
+            
+            for (let i = 0; i < tickCount; i++) {
+                const tickDate = new Date(start.getTime() + i * interval);
+                ticks.push({ date: tickDate, x: xScale(tickDate) });
             }
-            return reducedTicks;
-        }, [data, dates, xScale]);
+            return ticks;
+        }, [domain, innerWidth, xScale]);
 
         return (
-            <div className="mt-8 bg-gray-800 rounded-lg p-4 border border-gray-700 animate-fade-in">
+            <div className="mt-4 bg-gray-800 rounded-lg p-4 border border-gray-700 animate-fade-in">
               <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-gray-200">Cost/Unit Trend</h3>
                   {averageCost > 0 && (
@@ -472,37 +503,45 @@
                       {/* X-axis labels */}
                       {xAxisTicks.map(({date, x}, i) => (
                           <text key={i} x={x} y={height - margin.bottom + 15} textAnchor="middle" fill="#e5e7eb" fontSize="10">
-                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              {formatTickLabel(date)}
                           </text>
                       ))}
 
-                      {/* Average Cost Line */}
-                      {averageCost > 0 && yMin < averageCost && averageCost < yMax && (
-                        <g>
-                          <line
-                            x1={margin.left}
-                            y1={yScale(averageCost)}
-                            x2={width - margin.right}
-                            y2={yScale(averageCost)}
-                            stroke="#60a5fa"
-                            strokeWidth="1.5"
-                            strokeDasharray="4,4"
-                          />
-                          <title>{`Average Cost: R ${averageCost.toFixed(2)}`}</title>
-                        </g>
+                      {data.length === 0 && (
+                          <text x={width / 2} y={height / 2} textAnchor="middle" fill="#9ca3af" fontSize="14" className="font-semibold">
+                              No Data For Selected Period
+                          </text>
                       )}
 
-                      {/* Line Path */}
-                      <path d={pathData} fill="none" stroke="#3b82f6" strokeWidth="2" />
-                      
-                      {/* Data points */}
-                      {data.map((d, i) => (
-                      <g key={i} transform={`translate(${xScale(dates[i])}, ${yScale(d.value)})`}>
-                        <circle r="3" fill="#3b82f6" stroke="#1f2937" strokeWidth="2">
-                           <title>{`R ${d.value.toFixed(2)} on ${dates[i].toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`}</title>
-                        </circle>
-                      </g>
-                      ))}
+                      {data.length > 0 && (<React.Fragment>
+                          {/* Average Cost Line */}
+                          {averageCost > 0 && yMin < averageCost && averageCost < yMax && (
+                            <g>
+                              <line
+                                x1={margin.left}
+                                y1={yScale(averageCost)}
+                                x2={width - margin.right}
+                                y2={yScale(averageCost)}
+                                stroke="#60a5fa"
+                                strokeWidth="1.5"
+                                strokeDasharray="4,4"
+                              />
+                              <title>{`Average Cost: R ${averageCost.toFixed(2)}`}</title>
+                            </g>
+                          )}
+
+                          {/* Line Path */}
+                          <path d={pathData} fill="none" stroke="#3b82f6" strokeWidth="2" />
+                          
+                          {/* Data points */}
+                          {data.map((d, i) => (
+                          <g key={i} transform={`translate(${xScale(new Date(d.date))}, ${yScale(d.value)})`}>
+                            <circle r="3" fill="#3b82f6" stroke="#1f2937" strokeWidth="2">
+                               <title>{`R ${d.value.toFixed(2)} on ${new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`}</title>
+                            </circle>
+                          </g>
+                          ))}
+                      </React.Fragment>)}
                   </g>
               </svg>
             </div>
@@ -512,63 +551,64 @@
       // =============================================
       // COMPONENTS/CONSUMPTIONTRENDCHART.TSX
       // =============================================
-      const ConsumptionTrendChart = ({ data, averageConsumption }) => {
+      const ConsumptionTrendChart = ({ data, averageConsumption, domain }) => {
         const width = 500;
         const height = 200;
         const margin = { top: 20, right: 20, bottom: 40, left: 50 };
         const innerWidth = width - margin.left - margin.right;
         const innerHeight = height - margin.top - margin.bottom;
 
-        const dates = useMemo(() => data.map(d => new Date(d.date)), [data]);
         const values = useMemo(() => data.map(d => d.value), [data]);
-
-        const yMin = useMemo(() => Math.min(...values) * 0.95, [values]);
-        const yMax = useMemo(() => Math.max(...values) * 1.05, [values]);
+        const yMin = useMemo(() => data.length > 0 ? Math.min(...values) * 0.95 : 0, [values, data.length]);
+        const yMax = useMemo(() => data.length > 0 ? Math.max(...values) * 1.05 : 1, [values, data.length]);
 
         const xScale = useCallback((date) => {
-            const minTime = dates[0].getTime();
-            const maxTime = dates[dates.length - 1].getTime();
-            if (maxTime === minTime) return margin.left;
+            if (!domain) return 0;
+            const [minTime, maxTime] = [domain[0].getTime(), domain[1].getTime()];
+            if (maxTime === minTime) return margin.left + innerWidth / 2;
             return margin.left + ((date.getTime() - minTime) / (maxTime - minTime)) * innerWidth;
-        }, [dates, innerWidth, margin.left]);
+        }, [domain, innerWidth, margin.left]);
         
         const yScale = useCallback((value) => {
             if (yMax === yMin) return margin.top + innerHeight / 2;
             return margin.top + innerHeight - ((value - yMin) / (yMax - yMin)) * innerHeight;
         }, [yMin, yMax, innerHeight, margin.top]);
 
-        const pathData = useMemo(() => data.map((d, i) => {
-            const x = xScale(dates[i]);
-            const y = yScale(d.value);
-            return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-        }).join(' '), [data, dates, xScale, yScale]);
+        const pathData = useMemo(() => {
+            if (data.length < 2) return '';
+            return data.map((d, i) => {
+                const x = xScale(new Date(d.date));
+                const y = yScale(d.value);
+                return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+            }).join(' ');
+        }, [data, xScale, yScale]);
 
         const yAxisTicks = useMemo(() => {
             if (yMin === yMax) return [yMin];
             return Array.from({ length: 5 }, (_, i) => yMin + (i * (yMax - yMin)) / 4)
         }, [yMin, yMax]);
-
+        
+        const formatTickLabel = useCallback((date) => {
+            if (!domain) return '';
+            const [start, end] = domain;
+            const durationDays = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
+            if (durationDays > 365 * 1.5) return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }, [domain]);
+        
         const xAxisTicks = useMemo(() => {
-            const ticks = data.map((d,i) => ({ date: dates[i], x: xScale(dates[i]) }));
-            const reducedTicks = [];
-            if (ticks.length > 0) {
-                reducedTicks.push(ticks[0]);
-                let lastPushedX = ticks[0].x;
-                for (let i = 1; i < ticks.length - 1; i++) {
-                    if (ticks[i].x - lastPushedX > 60) {
-                        reducedTicks.push(ticks[i]);
-                        lastPushedX = ticks[i].x;
-                    }
-                }
-                if (ticks.length > 1) {
-                    const lastTick = ticks[ticks.length - 1];
-                    if(lastTick.x - lastPushedX > 60 || reducedTicks.length === 1) {
-                       reducedTicks.push(lastTick);
-                    }
-                }
+            if (!domain) return [];
+            const [start, end] = domain;
+            const tickCount = Math.max(2, Math.floor(innerWidth / 80));
+            const ticks = [];
+            const interval = (end.getTime() - start.getTime()) / (tickCount - 1);
+            
+            for (let i = 0; i < tickCount; i++) {
+                const tickDate = new Date(start.getTime() + i * interval);
+                ticks.push({ date: tickDate, x: xScale(tickDate) });
             }
-            return reducedTicks;
-        }, [data, dates, xScale]);
+            return ticks;
+        }, [domain, innerWidth, xScale]);
 
         return (
             <div className="mt-4 bg-gray-800 rounded-lg p-4 border border-gray-700 animate-fade-in">
@@ -596,37 +636,45 @@
                       {/* X-axis labels */}
                       {xAxisTicks.map(({date, x}, i) => (
                           <text key={i} x={x} y={height - margin.bottom + 15} textAnchor="middle" fill="#e5e7eb" fontSize="10">
-                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              {formatTickLabel(date)}
                           </text>
                       ))}
 
-                      {/* Average Consumption Line */}
-                      {averageConsumption > 0 && yMin < averageConsumption && averageConsumption < yMax && (
-                        <g>
-                          <line
-                            x1={margin.left}
-                            y1={yScale(averageConsumption)}
-                            x2={width - margin.right}
-                            y2={yScale(averageConsumption)}
-                            stroke="#f87171"
-                            strokeWidth="1.5"
-                            strokeDasharray="4,4"
-                          />
-                          <title>{`Average Consumption: ${averageConsumption.toFixed(2)} units/day`}</title>
-                        </g>
+                      {data.length === 0 && (
+                          <text x={width / 2} y={height / 2} textAnchor="middle" fill="#9ca3af" fontSize="14" className="font-semibold">
+                              No Data For Selected Period
+                          </text>
                       )}
 
-                      {/* Line Path */}
-                      <path d={pathData} fill="none" stroke="#ef4444" strokeWidth="2" />
-                      
-                      {/* Data points */}
-                      {data.map((d, i) => (
-                      <g key={i} transform={`translate(${xScale(dates[i])}, ${yScale(d.value)})`}>
-                        <circle r="3" fill="#ef4444" stroke="#1f2937" strokeWidth="2">
-                           <title>{`${d.value.toFixed(2)} units/day on ${dates[i].toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`}</title>
-                        </circle>
-                      </g>
-                      ))}
+                      {data.length > 0 && (<React.Fragment>
+                          {/* Average Consumption Line */}
+                          {averageConsumption > 0 && yMin < averageConsumption && averageConsumption < yMax && (
+                            <g>
+                              <line
+                                x1={margin.left}
+                                y1={yScale(averageConsumption)}
+                                x2={width - margin.right}
+                                y2={yScale(averageConsumption)}
+                                stroke="#f87171"
+                                strokeWidth="1.5"
+                                strokeDasharray="4,4"
+                              />
+                              <title>{`Average Consumption: ${averageConsumption.toFixed(2)} units/day`}</title>
+                            </g>
+                          )}
+
+                          {/* Line Path */}
+                          <path d={pathData} fill="none" stroke="#ef4444" strokeWidth="2" />
+                          
+                          {/* Data points */}
+                          {data.map((d, i) => (
+                          <g key={i} transform={`translate(${xScale(new Date(d.date))}, ${yScale(d.value)})`}>
+                            <circle r="3" fill="#ef4444" stroke="#1f2937" strokeWidth="2">
+                               <title>{`${d.value.toFixed(2)} units/day on ${new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`}</title>
+                            </circle>
+                          </g>
+                          ))}
+                      </React.Fragment>)}
                   </g>
               </svg>
             </div>
@@ -672,6 +720,7 @@
         const [isModalOpen, setIsModalOpen] = useState(false);
         const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
         const [sortOrder, setSortOrder] = useState('desc');
+        const [timeRange, setTimeRange] = useState('all'); // 'all', '6m', '1y'
 
         useEffect(() => {
           try {
@@ -789,6 +838,52 @@
           return chartData;
         }, [readings]);
 
+        const { filteredCostData, filteredConsumptionData, sharedDomain } = useMemo(() => {
+            const now = new Date();
+            const allDates = [...costChartData.map(d => new Date(d.date).getTime()), ...consumptionChartData.map(d => new Date(d.date).getTime())];
+
+            if (allDates.length === 0) {
+                return {
+                    filteredCostData: [],
+                    filteredConsumptionData: [],
+                    sharedDomain: [new Date(now.getFullYear(), now.getMonth() -1, now.getDate()), now]
+                };
+            }
+
+            const minDateOverall = new Date(Math.min(...allDates));
+            const maxDateOverall = new Date(Math.max(...allDates));
+            
+            let domainStart, domainEnd;
+            
+            if (timeRange === 'all') {
+                domainStart = minDateOverall;
+                domainEnd = maxDateOverall;
+            } else {
+                const monthsToSubtract = timeRange === '6m' ? 6 : 12;
+                domainStart = new Date(new Date().setMonth(now.getMonth() - monthsToSubtract));
+                domainEnd = now;
+            }
+
+            if (domainStart.getTime() >= domainEnd.getTime()) {
+                 domainStart = new Date(new Date(domainEnd).setMonth(domainEnd.getMonth() - 1));
+            }
+
+            const costDataInRange = costChartData.filter(d => {
+                const date = new Date(d.date);
+                return date >= domainStart && date <= domainEnd;
+            });
+            const consumptionDataInRange = consumptionChartData.filter(d => {
+                const date = new Date(d.date);
+                return date >= domainStart && date <= domainEnd;
+            });
+
+            return {
+                filteredCostData: costDataInRange,
+                filteredConsumptionData: consumptionDataInRange,
+                sharedDomain: [domainStart, domainEnd],
+            };
+        }, [costChartData, consumptionChartData, timeRange]);
+
         const handleAddReading = useCallback((newReading) => {
           setReadings(prev => [...prev, { ...newReading, id: new Date().toISOString() }]);
           setIsModalOpen(false);
@@ -848,8 +943,13 @@
               <main>
                 <MetricsDashboard metrics={metrics} />
                 
-                {costChartData.length > 0 && <CostTrendChart data={costChartData} averageCost={metrics.costPerUnit} />}
-                {consumptionChartData.length > 0 && <ConsumptionTrendChart data={consumptionChartData} averageConsumption={metrics.dailyConsumption} />}
+                {readings.length > 1 && (
+                    <React.Fragment>
+                        <DateRangeFilter selectedRange={timeRange} onSelectRange={setTimeRange} />
+                        <CostTrendChart data={filteredCostData} domain={sharedDomain} averageCost={metrics.costPerUnit} />
+                        <ConsumptionTrendChart data={filteredConsumptionData} domain={sharedDomain} averageConsumption={metrics.dailyConsumption} />
+                    </React.Fragment>
+                )}
                 
                 <div className="flex justify-between items-center mt-8 mb-4 border-b-2 border-gray-700 pb-2">
                   <h2 className="text-2xl font-semibold text-gray-200">

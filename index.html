@@ -455,8 +455,8 @@
                       {/* Y-axis grid lines and labels */}
                       {yAxisTicks.map((tick, i) => (
                       <g key={i} transform={`translate(0, ${yScale(tick)})`}>
-                          <line x1={margin.left} x2={width - margin.right} stroke="currentColor" className="text-gray-700" strokeWidth="0.5" strokeDasharray="2,2" />
-                          <text x={margin.left - 8} y="3" textAnchor="end" className="text-gray-400" fontSize="10">
+                          <line x1={margin.left} x2={width - margin.right} stroke="currentColor" className="text-gray-600" strokeWidth="0.5" strokeDasharray="2,2" />
+                          <text x={margin.left - 8} y="3" textAnchor="end" className="text-gray-300" fontSize="10">
                           {`R${tick.toFixed(2)}`}
                           </text>
                       </g>
@@ -464,7 +464,7 @@
                       
                       {/* X-axis labels */}
                       {xAxisTicks.map(({date, x}, i) => (
-                          <text key={i} x={x} y={height - margin.bottom + 15} textAnchor="middle" className="text-gray-400" fontSize="10">
+                          <text key={i} x={x} y={height - margin.bottom + 15} textAnchor="middle" className="text-gray-300" fontSize="10">
                               {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </text>
                       ))}

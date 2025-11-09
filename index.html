@@ -388,7 +388,7 @@
       // =============================================
       // COMPONENTS/COSTTRENDCHART.TSX
       // =============================================
-      const CostTrendChart = ({ data }) => {
+      const CostTrendChart = ({ data, averageCost }) => {
         const width = 500;
         const height = 200;
         const margin = { top: 20, right: 20, bottom: 40, left: 50 };
@@ -448,7 +448,14 @@
 
         return (
             <div className="mt-8 bg-gray-800 rounded-lg p-4 border border-gray-700 animate-fade-in">
-              <h3 className="text-lg font-semibold text-gray-200 mb-4">Cost/Unit Trend</h3>
+              <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-200">Cost/Unit Trend</h3>
+                  {averageCost > 0 && (
+                      <p className="text-sm text-gray-400">
+                          Avg: <span className="font-bold text-white">R {averageCost.toFixed(2)}</span>
+                      </p>
+                  )}
+              </div>
               <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" aria-labelledby="chart-title" role="img">
                   <title id="chart-title">A line chart showing the trend of cost per unit of electricity over time.</title>
                   <g aria-hidden="true">
@@ -468,6 +475,22 @@
                               {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </text>
                       ))}
+
+                      {/* Average Cost Line */}
+                      {averageCost > 0 && yMin < averageCost && averageCost < yMax && (
+                        <g>
+                          <line
+                            x1={margin.left}
+                            y1={yScale(averageCost)}
+                            x2={width - margin.right}
+                            y2={yScale(averageCost)}
+                            stroke="#60a5fa"
+                            strokeWidth="1.5"
+                            strokeDasharray="4,4"
+                          />
+                          <title>{`Average Cost: R ${averageCost.toFixed(2)}`}</title>
+                        </g>
+                      )}
 
                       {/* Line Path */}
                       <path d={pathData} fill="none" stroke="#3b82f6" strokeWidth="2" />
@@ -556,10 +579,13 @@
         const metrics = useMemo(() => {
           if (readings.length < 2) {
             const latestReadingUnits = readings.length === 1 ? readings[0].newReading : 0;
+            const totalRands = readings.length === 1 ? readings[0].amountLoaded : 0;
+            const totalUnitsLoaded = readings.length === 1 ? (readings[0].newReading - readings[0].oldReading) : 0;
+            const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
             return {
               dailyExpense: 0,
               dailyConsumption: 0,
-              costPerUnit: 0,
+              costPerUnit: costPerUnit,
               monthlyCost: 0,
               monthlyConsumption: 0,
               estimatedDaysLeft: Infinity,
@@ -604,7 +630,7 @@
         }, [readings]);
 
         const chartData = useMemo(() => {
-          if (readings.length < 2) return [];
+          if (readings.length === 0) return [];
           const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           return chronoSorted.map(r => {
             const unitsLoaded = r.newReading - r.oldReading;
@@ -675,7 +701,7 @@
               <main>
                 <MetricsDashboard metrics={metrics} />
                 
-                {chartData.length > 1 && <CostTrendChart data={chartData} />}
+                {chartData.length > 0 && <CostTrendChart data={chartData} averageCost={metrics.costPerUnit} />}
                 
                 <div className="flex justify-between items-center mt-8 mb-4 border-b-2 border-gray-700 pb-2">
                   <h2 className="text-2xl font-semibold text-gray-200">

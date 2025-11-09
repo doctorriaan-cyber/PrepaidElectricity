@@ -510,6 +510,130 @@
       };
 
       // =============================================
+      // COMPONENTS/CONSUMPTIONTRENDCHART.TSX
+      // =============================================
+      const ConsumptionTrendChart = ({ data, averageConsumption }) => {
+        const width = 500;
+        const height = 200;
+        const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+        const innerWidth = width - margin.left - margin.right;
+        const innerHeight = height - margin.top - margin.bottom;
+
+        const dates = useMemo(() => data.map(d => new Date(d.date)), [data]);
+        const values = useMemo(() => data.map(d => d.value), [data]);
+
+        const yMin = useMemo(() => Math.min(...values) * 0.95, [values]);
+        const yMax = useMemo(() => Math.max(...values) * 1.05, [values]);
+
+        const xScale = useCallback((date) => {
+            const minTime = dates[0].getTime();
+            const maxTime = dates[dates.length - 1].getTime();
+            if (maxTime === minTime) return margin.left;
+            return margin.left + ((date.getTime() - minTime) / (maxTime - minTime)) * innerWidth;
+        }, [dates, innerWidth, margin.left]);
+        
+        const yScale = useCallback((value) => {
+            if (yMax === yMin) return margin.top + innerHeight / 2;
+            return margin.top + innerHeight - ((value - yMin) / (yMax - yMin)) * innerHeight;
+        }, [yMin, yMax, innerHeight, margin.top]);
+
+        const pathData = useMemo(() => data.map((d, i) => {
+            const x = xScale(dates[i]);
+            const y = yScale(d.value);
+            return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
+        }).join(' '), [data, dates, xScale, yScale]);
+
+        const yAxisTicks = useMemo(() => {
+            if (yMin === yMax) return [yMin];
+            return Array.from({ length: 5 }, (_, i) => yMin + (i * (yMax - yMin)) / 4)
+        }, [yMin, yMax]);
+
+        const xAxisTicks = useMemo(() => {
+            const ticks = data.map((d,i) => ({ date: dates[i], x: xScale(dates[i]) }));
+            const reducedTicks = [];
+            if (ticks.length > 0) {
+                reducedTicks.push(ticks[0]);
+                let lastPushedX = ticks[0].x;
+                for (let i = 1; i < ticks.length - 1; i++) {
+                    if (ticks[i].x - lastPushedX > 60) {
+                        reducedTicks.push(ticks[i]);
+                        lastPushedX = ticks[i].x;
+                    }
+                }
+                if (ticks.length > 1) {
+                    const lastTick = ticks[ticks.length - 1];
+                    if(lastTick.x - lastPushedX > 60 || reducedTicks.length === 1) {
+                       reducedTicks.push(lastTick);
+                    }
+                }
+            }
+            return reducedTicks;
+        }, [data, dates, xScale]);
+
+        return (
+            <div className="mt-4 bg-gray-800 rounded-lg p-4 border border-gray-700 animate-fade-in">
+              <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-200">Consumption Trend (Units/Day)</h3>
+                  {averageConsumption > 0 && (
+                      <p className="text-sm text-gray-400">
+                          Avg: <span className="font-bold text-white">{averageConsumption.toFixed(2)}</span> units/day
+                      </p>
+                  )}
+              </div>
+              <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" aria-labelledby="consumption-chart-title" role="img">
+                  <title id="consumption-chart-title">A line chart showing the trend of daily electricity consumption over time.</title>
+                  <g aria-hidden="true">
+                      {/* Y-axis grid lines and labels */}
+                      {yAxisTicks.map((tick, i) => (
+                      <g key={i} transform={`translate(0, ${yScale(tick)})`}>
+                          <line x1={margin.left} x2={width - margin.right} stroke="currentColor" className="text-gray-600" strokeWidth="0.5" strokeDasharray="2,2" />
+                          <text x={margin.left - 8} y="3" textAnchor="end" fill="#e5e7eb" fontSize="10">
+                            {tick.toFixed(2)}
+                          </text>
+                      </g>
+                      ))}
+                      
+                      {/* X-axis labels */}
+                      {xAxisTicks.map(({date, x}, i) => (
+                          <text key={i} x={x} y={height - margin.bottom + 15} textAnchor="middle" fill="#e5e7eb" fontSize="10">
+                              {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </text>
+                      ))}
+
+                      {/* Average Consumption Line */}
+                      {averageConsumption > 0 && yMin < averageConsumption && averageConsumption < yMax && (
+                        <g>
+                          <line
+                            x1={margin.left}
+                            y1={yScale(averageConsumption)}
+                            x2={width - margin.right}
+                            y2={yScale(averageConsumption)}
+                            stroke="#f87171"
+                            strokeWidth="1.5"
+                            strokeDasharray="4,4"
+                          />
+                          <title>{`Average Consumption: ${averageConsumption.toFixed(2)} units/day`}</title>
+                        </g>
+                      )}
+
+                      {/* Line Path */}
+                      <path d={pathData} fill="none" stroke="#ef4444" strokeWidth="2" />
+                      
+                      {/* Data points */}
+                      {data.map((d, i) => (
+                      <g key={i} transform={`translate(${xScale(dates[i])}, ${yScale(d.value)})`}>
+                        <circle r="3" fill="#ef4444" stroke="#1f2937" strokeWidth="2">
+                           <title>{`${d.value.toFixed(2)} units/day on ${dates[i].toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`}</title>
+                        </circle>
+                      </g>
+                      ))}
+                  </g>
+              </svg>
+            </div>
+        );
+      };
+
+      // =============================================
       // APP.TSX
       // =============================================
       const TimelineItem = ({ reading, isFirst, isLast, unitsConsumed, daysSinceLast }) => {
@@ -629,7 +753,7 @@
           return { dailyExpense, dailyConsumption, costPerUnit, monthlyCost, estimatedDaysLeft, calculatedCurrentUnits, monthlyConsumption };
         }, [readings]);
 
-        const chartData = useMemo(() => {
+        const costChartData = useMemo(() => {
           if (readings.length === 0) return [];
           const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
           return chronoSorted.map(r => {
@@ -640,6 +764,29 @@
               value: r.amountLoaded / unitsLoaded
             };
           }).filter(Boolean);
+        }, [readings]);
+
+        const consumptionChartData = useMemo(() => {
+          if (readings.length < 2) return [];
+          const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          
+          const chartData = [];
+          for (let i = 1; i < chronoSorted.length; i++) {
+            const current = chronoSorted[i];
+            const previous = chronoSorted[i - 1];
+            
+            const unitsConsumed = previous.newReading - current.oldReading;
+            const timeDiff = new Date(current.date).getTime() - new Date(previous.date).getTime();
+            const daysSinceLast = timeDiff / (1000 * 3600 * 24);
+            
+            if (daysSinceLast > 0 && unitsConsumed >= 0) {
+              chartData.push({
+                date: current.date,
+                value: unitsConsumed / daysSinceLast,
+              });
+            }
+          }
+          return chartData;
         }, [readings]);
 
         const handleAddReading = useCallback((newReading) => {
@@ -701,7 +848,8 @@
               <main>
                 <MetricsDashboard metrics={metrics} />
                 
-                {chartData.length > 0 && <CostTrendChart data={chartData} averageCost={metrics.costPerUnit} />}
+                {costChartData.length > 0 && <CostTrendChart data={costChartData} averageCost={metrics.costPerUnit} />}
+                {consumptionChartData.length > 0 && <ConsumptionTrendChart data={consumptionChartData} averageConsumption={metrics.dailyConsumption} />}
                 
                 <div className="flex justify-between items-center mt-8 mb-4 border-b-2 border-gray-700 pb-2">
                   <h2 className="text-2xl font-semibold text-gray-200">

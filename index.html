@@ -206,49 +206,96 @@
 
       const MetricsDashboard = ({ metrics }) => {
         return (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <MetricCard 
-              icon={<BatteryChargingIcon className="w-6 h-6 text-white"/>} 
-              title="Current Units" 
-              value={metrics.calculatedCurrentUnits.toFixed(2)} 
-              unit="est." 
-              color="bg-green-500/80"
-            />
-            <MetricCard 
-              icon={<ClockIcon className="w-6 h-6 text-white"/>} 
-              title="Est. Refill In" 
-              value={isFinite(metrics.estimatedDaysLeft) ? Math.floor(metrics.estimatedDaysLeft).toString() : '∞'} 
-              unit="days"
-              color="bg-yellow-500/80"
-            />
-            <MetricCard 
-              icon={<ZapIcon className="w-6 h-6 text-white"/>} 
-              title="Daily Use" 
-              value={metrics.dailyConsumption.toFixed(2)} 
-              unit="units"
-              color="bg-blue-500/80"
-            />
-            <MetricCard 
-              icon={<DollarSignIcon className="w-6 h-6 text-white"/>} 
-              title="Daily Cost" 
-              value={`R ${metrics.dailyExpense.toFixed(2)}`} 
-              unit=""
-              color="bg-red-500/80"
-            />
-             <MetricCard 
-              icon={<ClipboardListIcon className="w-6 h-6 text-white"/>} 
-              title="Monthly Use" 
-              value={metrics.monthlyConsumption.toFixed(2)} 
-              unit="units"
-              color="bg-teal-500/80"
-            />
-            <MetricCard 
-              icon={<CalendarIcon className="w-6 h-6 text-white"/>} 
-              title="Monthly Cost" 
-              value={`R ${metrics.monthlyCost.toFixed(2)}`} 
-              unit="est."
-              color="bg-indigo-500/80"
-            />
+          <div className="space-y-6">
+            {/* Current Status */}
+            <div className="grid grid-cols-2 gap-4">
+                <MetricCard 
+                  icon={<BatteryChargingIcon className="w-6 h-6 text-white"/>} 
+                  title="Current Units" 
+                  value={metrics.calculatedCurrentUnits.toFixed(2)} 
+                  unit="est." 
+                  color="bg-green-500/80"
+                />
+                <MetricCard 
+                  icon={<ClockIcon className="w-6 h-6 text-white"/>} 
+                  title="Est. Refill In" 
+                  value={isFinite(metrics.estimatedDaysLeft) ? Math.floor(metrics.estimatedDaysLeft).toString() : '∞'} 
+                  unit="days"
+                  color="bg-yellow-500/80"
+                />
+            </div>
+
+            {/* Average Data */}
+            <div>
+                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Average From All Data</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <MetricCard 
+                      icon={<ZapIcon className="w-6 h-6 text-white"/>} 
+                      title="Daily Use" 
+                      value={metrics.dailyConsumption.toFixed(2)} 
+                      unit="units"
+                      color="bg-blue-500/80"
+                    />
+                    <MetricCard 
+                      icon={<DollarSignIcon className="w-6 h-6 text-white"/>} 
+                      title="Daily Cost" 
+                      value={`R ${metrics.dailyExpense.toFixed(2)}`} 
+                      unit=""
+                      color="bg-red-500/80"
+                    />
+                     <MetricCard 
+                      icon={<ClipboardListIcon className="w-6 h-6 text-white"/>} 
+                      title="Monthly Use" 
+                      value={metrics.monthlyConsumption.toFixed(2)} 
+                      unit="units"
+                      color="bg-teal-500/80"
+                    />
+                    <MetricCard 
+                      icon={<CalendarIcon className="w-6 h-6 text-white"/>} 
+                      title="Monthly Cost" 
+                      value={`R ${metrics.monthlyCost.toFixed(2)}`} 
+                      unit="est."
+                      color="bg-indigo-500/80"
+                    />
+                </div>
+            </div>
+
+            <div className="border-t border-gray-700"></div>
+            
+            {/* Recent Data */}
+            <div>
+                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Most Recent Data</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <MetricCard 
+                      icon={<TrendingUpIcon className="w-6 h-6 text-white"/>} 
+                      title="Daily Use" 
+                      value={metrics.latestDailyConsumption.toFixed(2)} 
+                      unit="units"
+                      color="bg-blue-600/60"
+                    />
+                    <MetricCard 
+                      icon={<DollarSignIcon className="w-6 h-6 text-white"/>} 
+                      title="Daily Cost" 
+                      value={`R ${metrics.latestDailyExpense.toFixed(2)}`} 
+                      unit=""
+                      color="bg-red-600/60"
+                    />
+                     <MetricCard 
+                      icon={<ClipboardListIcon className="w-6 h-6 text-white"/>} 
+                      title="Monthly Use" 
+                      value={metrics.latestMonthlyConsumption.toFixed(2)} 
+                      unit="units"
+                      color="bg-teal-600/60"
+                    />
+                    <MetricCard 
+                      icon={<CalendarIcon className="w-6 h-6 text-white"/>} 
+                      title="Monthly Cost" 
+                      value={`R ${metrics.latestMonthlyCost.toFixed(2)}`} 
+                      unit="est."
+                      color="bg-indigo-600/60"
+                    />
+                </div>
+            </div>
           </div>
         );
       };
@@ -758,6 +805,10 @@
               monthlyConsumption: 0,
               estimatedDaysLeft: 0,
               calculatedCurrentUnits: 0,
+              latestDailyConsumption: 0,
+              latestDailyExpense: 0,
+              latestMonthlyConsumption: 0,
+              latestMonthlyCost: 0
             };
           }
         
@@ -765,6 +816,7 @@
           
           let totalUnitsConsumed = 0;
           let totalDaysForConsumption = 0;
+          let latestDailyConsumption = 0;
 
           if (chronoSorted.length > 1) {
               for (let i = 0; i < chronoSorted.length - 1; i++) {
@@ -779,6 +831,11 @@
                   if (unitsUsed > 0 && daysDiff > 0) {
                       totalUnitsConsumed += unitsUsed;
                       totalDaysForConsumption += daysDiff;
+                      
+                      // Identify if this is the last interval for "Latest" stats
+                      if (i === chronoSorted.length - 2) {
+                          latestDailyConsumption = unitsUsed / daysDiff;
+                      }
                   }
               }
           }
@@ -802,15 +859,35 @@
           const totalUnitsLoaded = readings.reduce((sum, r) => sum + (r.newReading - r.oldReading), 0);
           const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
 
-          // Current Units Estimate
+          // Latest Calculations
           const latestReading = chronoSorted[chronoSorted.length-1];
+          const latestUnitsLoaded = latestReading.newReading - latestReading.oldReading;
+          const latestCostPerUnit = latestUnitsLoaded > 0 ? latestReading.amountLoaded / latestUnitsLoaded : 0;
+          
+          const latestDailyExpense = latestCostPerUnit * latestDailyConsumption;
+          const latestMonthlyConsumption = latestDailyConsumption * 30;
+          const latestMonthlyCost = latestDailyExpense * 30;
+
+          // Current Units Estimate
           const daysSinceLastReading = (now.getTime() - new Date(latestReading.date).getTime()) / (1000 * 3600 * 24);
           const calculatedCurrentUnits = Math.max(0, latestReading.newReading - (dailyConsumption * daysSinceLastReading));
           
           // Estimated Days Until Refill
           const estimatedDaysLeft = dailyConsumption > 0 ? calculatedCurrentUnits / dailyConsumption : Infinity;
 
-          return { dailyExpense, dailyConsumption, costPerUnit, monthlyCost, estimatedDaysLeft, calculatedCurrentUnits, monthlyConsumption };
+          return { 
+            dailyExpense, 
+            dailyConsumption, 
+            costPerUnit, 
+            monthlyCost, 
+            estimatedDaysLeft, 
+            calculatedCurrentUnits, 
+            monthlyConsumption,
+            latestDailyConsumption,
+            latestDailyExpense,
+            latestMonthlyConsumption,
+            latestMonthlyCost
+          };
         }, [readings]);
 
         const costChartData = useMemo(() => {

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -750,53 +749,65 @@
         }, [readings, sortOrder]);
 
         const metrics = useMemo(() => {
-          if (readings.length < 2) {
-            const latestReadingUnits = readings.length === 1 ? readings[0].newReading : 0;
-            const totalRands = readings.length === 1 ? readings[0].amountLoaded : 0;
-            const totalUnitsLoaded = readings.length === 1 ? (readings[0].newReading - readings[0].oldReading) : 0;
-            const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
+          if (readings.length === 0) {
             return {
               dailyExpense: 0,
               dailyConsumption: 0,
-              costPerUnit: costPerUnit,
+              costPerUnit: 0,
               monthlyCost: 0,
               monthlyConsumption: 0,
-              estimatedDaysLeft: Infinity,
-              calculatedCurrentUnits: latestReadingUnits,
+              estimatedDaysLeft: 0,
+              calculatedCurrentUnits: 0,
             };
           }
         
           const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          
           let totalUnitsConsumed = 0;
           let totalDaysForConsumption = 0;
 
-          for (let i = 0; i < chronoSorted.length - 1; i++) {
-              const current = chronoSorted[i];
-              const next = chronoSorted[i+1];
-              const unitsUsed = current.newReading - next.oldReading;
-              if (unitsUsed > 0) {
-                  totalUnitsConsumed += unitsUsed;
+          if (chronoSorted.length > 1) {
+              for (let i = 0; i < chronoSorted.length - 1; i++) {
+                  const current = chronoSorted[i];
+                  const next = chronoSorted[i+1];
+                  
+                  // Calculate units consumed between the end of the current purchase and the start of the next purchase
+                  const unitsUsed = current.newReading - next.oldReading;
                   const timeDiff = new Date(next.date).getTime() - new Date(current.date).getTime();
-                  totalDaysForConsumption += timeDiff / (1000 * 3600 * 24);
+                  const daysDiff = timeDiff / (1000 * 3600 * 24);
+
+                  if (unitsUsed > 0 && daysDiff > 0) {
+                      totalUnitsConsumed += unitsUsed;
+                      totalDaysForConsumption += daysDiff;
+                  }
               }
           }
 
+          const dailyConsumption = totalDaysForConsumption > 0 ? totalUnitsConsumed / totalDaysForConsumption : 0;
+
+          // Calculate Daily Cost (Rands/Day) based on total value spent over the entire tracked period (First Date to Now)
           const totalRands = readings.reduce((sum, r) => sum + r.amountLoaded, 0);
           const firstDate = new Date(chronoSorted[0].date);
-          const lastDate = new Date(chronoSorted[chronoSorted.length - 1].date);
-          const totalDaysOverall = (lastDate.getTime() - firstDate.getTime()) / (1000 * 3600 * 24) || 1;
-
-          const totalUnitsLoaded = readings.reduce((sum, r) => sum + (r.newReading - r.oldReading), 0);
-
-          const dailyConsumption = totalDaysForConsumption > 0 ? totalUnitsConsumed / totalDaysForConsumption : 0;
+          const now = new Date();
+          // Ensure at least 1 day to avoid division by zero or extreme values for new users
+          const totalDaysOverall = Math.max(1, (now.getTime() - firstDate.getTime()) / (1000 * 3600 * 24));
+          
           const dailyExpense = totalDaysOverall > 0 ? totalRands / totalDaysOverall : 0;
-          const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
-          const monthlyCost = dailyExpense * 30.44;
-          const monthlyConsumption = dailyConsumption * 30.44;
 
+          // Monthly Estimates (based on 30 days)
+          const monthlyCost = dailyExpense * 30;
+          const monthlyConsumption = dailyConsumption * 30;
+
+          // Cost Per Unit (Average)
+          const totalUnitsLoaded = readings.reduce((sum, r) => sum + (r.newReading - r.oldReading), 0);
+          const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
+
+          // Current Units Estimate
           const latestReading = chronoSorted[chronoSorted.length-1];
-          const daysSinceLastReading = (new Date().getTime() - new Date(latestReading.date).getTime()) / (1000 * 3600 * 24);
+          const daysSinceLastReading = (now.getTime() - new Date(latestReading.date).getTime()) / (1000 * 3600 * 24);
           const calculatedCurrentUnits = Math.max(0, latestReading.newReading - (dailyConsumption * daysSinceLastReading));
+          
+          // Estimated Days Until Refill
           const estimatedDaysLeft = dailyConsumption > 0 ? calculatedCurrentUnits / dailyConsumption : Infinity;
 
           return { dailyExpense, dailyConsumption, costPerUnit, monthlyCost, estimatedDaysLeft, calculatedCurrentUnits, monthlyConsumption };

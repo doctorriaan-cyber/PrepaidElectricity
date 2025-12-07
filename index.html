@@ -842,22 +842,18 @@
 
           const dailyConsumption = totalDaysForConsumption > 0 ? totalUnitsConsumed / totalDaysForConsumption : 0;
 
-          // Calculate Daily Cost (Rands/Day) based on total value spent over the entire tracked period (First Date to Now)
+          // Cost Per Unit (Average)
           const totalRands = readings.reduce((sum, r) => sum + r.amountLoaded, 0);
-          const firstDate = new Date(chronoSorted[0].date);
-          const now = new Date();
-          // Ensure at least 1 day to avoid division by zero or extreme values for new users
-          const totalDaysOverall = Math.max(1, (now.getTime() - firstDate.getTime()) / (1000 * 3600 * 24));
-          
-          const dailyExpense = totalDaysOverall > 0 ? totalRands / totalDaysOverall : 0;
+          const totalUnitsLoaded = readings.reduce((sum, r) => sum + (r.newReading - r.oldReading), 0);
+          const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
+
+          // Calculate Daily Cost (Average)
+          // Based on Average Daily Consumption * Average Cost Per Unit
+          const dailyExpense = dailyConsumption * costPerUnit;
 
           // Monthly Estimates (based on 30 days)
           const monthlyCost = dailyExpense * 30;
           const monthlyConsumption = dailyConsumption * 30;
-
-          // Cost Per Unit (Average)
-          const totalUnitsLoaded = readings.reduce((sum, r) => sum + (r.newReading - r.oldReading), 0);
-          const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
 
           // Latest Calculations
           const latestReading = chronoSorted[chronoSorted.length-1];
@@ -869,6 +865,7 @@
           const latestMonthlyCost = latestDailyExpense * 30;
 
           // Current Units Estimate
+          const now = new Date();
           const daysSinceLastReading = (now.getTime() - new Date(latestReading.date).getTime()) / (1000 * 3600 * 24);
           const calculatedCurrentUnits = Math.max(0, latestReading.newReading - (dailyConsumption * daysSinceLastReading));
           

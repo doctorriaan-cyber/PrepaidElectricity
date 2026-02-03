@@ -1,28 +1,26 @@
+
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prepaid Electricity Tracker</title>
+    <title>Prepaid Water Tracker</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel Standalone for Single File Functionality -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
               'brand-blue': {
-                '50': '#eff6ff',
-                '100': '#dbeafe',
-                '200': '#bfdbfe',
-                '300': '#93c5fd',
-                '400': '#60a5fa',
-                '500': '#3b82f6',
-                '600': '#2563eb',
-                '700': '#1d4ed8',
-                '800': '#1e40af',
-                '900': '#1e3a8a',
-                '950': '#172554',
+                '50': '#eff6ff', '100': '#dbeafe', '200': '#bfdbfe', '300': '#93c5fd',
+                '400': '#60a5fa', '500': '#3b82f6', '600': '#2563eb', '700': '#1d4ed8',
+                '800': '#1e40af', '900': '#1e3a8a', '950': '#172554',
               },
             },
             keyframes: {
@@ -38,1114 +36,319 @@
         }
       }
     </script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type="importmap">
-    {
-      "imports": {
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "react": "https://esm.sh/react@18.2.0"
-      }
-    }
-    </script>
-  </head>
-  <body class="bg-gray-900">
+    <style>
+        body { background-color: #111827; color: #f3f4f6; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+    </style>
+</head>
+<body>
     <div id="root"></div>
-    <script type="text/babel" data-type="module">
-      import React, { useState, useEffect, useMemo, useCallback } from 'react';
-      import ReactDOM from 'react-dom/client';
 
-      // =============================================
-      // COMPONENTS/ICONS.TSX
-      // =============================================
-      const PlusIcon = (props) => (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      );
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, Fragment } = React;
 
-      const DollarSignIcon = (props) => (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-          <line x1="12" y1="1" x2="12" y2="23"></line>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-        </svg>
-      );
-
-      const ZapIcon = (props) => (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-        </svg>
-      );
-
-      const CalendarIcon = (props) => (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-      );
-
-      const TrendingUpIcon = (props) => (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-          <polyline points="17 6 23 6 23 12"></polyline>
-        </svg>
-      );
-
-      const ClockIcon = (props) => (
+        // =============================================
+        // ICONS (SVG Components)
+        // =============================================
+        const PlusIcon = (props) => (
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
-      );
-
-      const BatteryChargingIcon = (props) => (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-              <path d="M5 18H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3.19M15 6h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-3.19"></path>
-              <line x1="23" y1="13" x2="23" y2="11"></line>
-              <polyline points="11 6 7 12 13 12 9 18"></polyline>
-          </svg>
-      );
-
-      const TrashIcon = (props) => (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-            <polyline points="3 6 5 6 21 6"></polyline>
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
-          </svg>
-      );
-
-      const AlertTriangleIcon = (props) => (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              <line x1="12" y1="9" x2="12" y2="13"></line>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-      );
-
-      const SortIcon = (props) => (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-              <path d="m3 16 4 4 4-4"/>
-              <path d="M7 20V4"/>
-              <path d="m21 8-4-4-4 4"/>
-              <path d="M17 4v16"/>
-          </svg>
-      );
-      
-      const ClipboardListIcon = (props) => (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-              <path d="M12 11h4"/>
-              <path d="M12 16h4"/>
-              <path d="M8 11h.01"/>
-              <path d="M8 16h.01"/>
-          </svg>
-      );
-
-      // =============================================
-      // COMPONENTS/CONFIRMMODAL.TSX
-      // =============================================
-      const ConfirmModal = ({ isOpen, onClose, onConfirm, title, children }) => {
-        if (!isOpen) return null;
-
-        return (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4" aria-modal="true" role="dialog">
-            <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 border border-gray-700 animate-fade-in">
-              <div className="flex flex-col items-center text-center">
-                  <div className="p-3 rounded-full bg-red-500/20 mb-4">
-                      <AlertTriangleIcon className="w-8 h-8 text-red-500" />
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2 text-white">{title}</h2>
-                  <div className="text-gray-400 mb-6">
-                      {children}
-                  </div>
-              </div>
-              <div className="flex justify-center gap-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition"
-                  aria-label="Cancel action"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={onConfirm}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition"
-                  aria-label="Confirm action"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
         );
-      };
 
-
-      // =============================================
-      // COMPONENTS/METRICSDASHBOARD.TSX
-      // =============================================
-      const MetricCard = ({ icon, title, value, unit, color }) => (
-        <div className="bg-gray-800 p-4 rounded-xl flex items-center gap-4 shadow-lg border border-gray-700">
-          <div className={`p-3 rounded-full ${color}`}>
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-gray-400 truncate">{title}</p>
-            <p className="text-xl font-bold text-white truncate">
-              {value} <span className="text-base font-normal text-gray-300">{unit}</span>
-            </p>
-          </div>
-        </div>
-      );
-
-      const MetricsDashboard = ({ metrics }) => {
-        const refillValue = useMemo(() => {
-          if (!isFinite(metrics.estimatedDaysLeft)) return '∞';
-          const to0 = Math.floor(metrics.estimatedDaysLeft);
-          const to100 = isFinite(metrics.estimatedDaysTo100) ? Math.floor(metrics.estimatedDaysTo100) : '∞';
-          return `${to0} (${to100})`;
-        }, [metrics.estimatedDaysLeft, metrics.estimatedDaysTo100]);
-
-        return (
-          <div className="space-y-6">
-            {/* Current Status */}
-            <div className="grid grid-cols-2 gap-4">
-                <MetricCard 
-                  icon={<BatteryChargingIcon className="w-6 h-6 text-white"/>} 
-                  title="Current Units" 
-                  value={metrics.calculatedCurrentUnits.toFixed(2)} 
-                  unit="est." 
-                  color="bg-green-500/80"
-                />
-                <MetricCard 
-                  icon={<ClockIcon className="w-6 h-6 text-white"/>} 
-                  title="Est. Refill In" 
-                  value={refillValue} 
-                  unit="days"
-                  color="bg-yellow-500/80"
-                />
-            </div>
-
-            {/* Average Data */}
-            <div>
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Average From All Data</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <MetricCard 
-                      icon={<ZapIcon className="w-6 h-6 text-white"/>} 
-                      title="Daily Use" 
-                      value={metrics.dailyConsumption.toFixed(2)} 
-                      unit="units"
-                      color="bg-blue-500/80"
-                    />
-                    <MetricCard 
-                      icon={<DollarSignIcon className="w-6 h-6 text-white"/>} 
-                      title="Daily Cost" 
-                      value={`R ${metrics.dailyExpense.toFixed(2)}`} 
-                      unit=""
-                      color="bg-red-500/80"
-                    />
-                     <MetricCard 
-                      icon={<ClipboardListIcon className="w-6 h-6 text-white"/>} 
-                      title="Monthly Use" 
-                      value={metrics.monthlyConsumption.toFixed(2)} 
-                      unit="units"
-                      color="bg-teal-500/80"
-                    />
-                    <MetricCard 
-                      icon={<CalendarIcon className="w-6 h-6 text-white"/>} 
-                      title="Monthly Cost" 
-                      value={`R ${metrics.monthlyCost.toFixed(2)}`} 
-                      unit="est."
-                      color="bg-indigo-500/80"
-                    />
-                </div>
-            </div>
-
-            <div className="border-t border-gray-700"></div>
-            
-            {/* Recent Data */}
-            <div>
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Most Recent Data</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <MetricCard 
-                      icon={<TrendingUpIcon className="w-6 h-6 text-white"/>} 
-                      title="Daily Use" 
-                      value={metrics.latestDailyConsumption.toFixed(2)} 
-                      unit="units"
-                      color="bg-blue-600/60"
-                    />
-                    <MetricCard 
-                      icon={<DollarSignIcon className="w-6 h-6 text-white"/>} 
-                      title="Daily Cost" 
-                      value={`R ${metrics.latestDailyExpense.toFixed(2)}`} 
-                      unit=""
-                      color="bg-red-600/60"
-                    />
-                     <MetricCard 
-                      icon={<ClipboardListIcon className="w-6 h-6 text-white"/>} 
-                      title="Monthly Use" 
-                      value={metrics.latestMonthlyConsumption.toFixed(2)} 
-                      unit="units"
-                      color="bg-teal-600/60"
-                    />
-                    <MetricCard 
-                      icon={<CalendarIcon className="w-6 h-6 text-white"/>} 
-                      title="Monthly Cost" 
-                      value={`R ${metrics.latestMonthlyCost.toFixed(2)}`} 
-                      unit="est."
-                      color="bg-indigo-600/60"
-                    />
-                </div>
-            </div>
-          </div>
+        const DollarSignIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
         );
-      };
 
+        const DropletIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0L12 2.69z"></path>
+          </svg>
+        );
 
-      // =============================================
-      // COMPONENTS/ADDREADINGMODAL.TSX
-      // =============================================
-      const InputField = ({ id, label, type, value, onChange, error, placeholder }) => (
-        <div>
-            <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
-            <input
-              id={id}
-              type={type}
-              value={value}
-              onChange={onChange}
-              placeholder={placeholder}
-              className={`w-full bg-gray-700 text-white rounded-md p-2 border ${error ? 'border-red-500' : 'border-gray-600'} focus:ring-2 focus:ring-brand-blue-500 focus:border-brand-blue-500 outline-none`}
-            />
-            {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-          </div>
-      );
+        const CalendarIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        );
 
-      const AddReadingModal = ({ isOpen, onClose, onAdd, lastReading }) => {
-        const [date, setDate] = useState('');
-        const [oldReading, setOldReading] = useState('');
-        const [amountLoaded, setAmountLoaded] = useState('');
-        const [newReading, setNewReading] = useState('');
-        const [errors, setErrors] = useState({});
+        const TrendingUpIcon = (props) => (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+            <polyline points="17 6 23 6 23 12"></polyline>
+          </svg>
+        );
 
-        useEffect(() => {
-          if (isOpen) {
-            const today = new Date();
-            // Adjust for timezone offset to get correct YYYY-MM-DD
-            today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-            setDate(today.toISOString().split('T')[0]);
-            
-            setOldReading(lastReading ? lastReading.newReading.toString() : '0');
-            setAmountLoaded('');
-            setNewReading('');
-            setErrors({});
-          }
-        }, [isOpen, lastReading]);
+        const ClockIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        );
 
-        if (!isOpen) return null;
+        const GlassWaterIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d="M4.5 3h15"></path>
+                <path d="M6 3v16a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V3"></path>
+                <path d="M6 14h12"></path>
+            </svg>
+        );
 
-        const validate = () => {
-          const newErrors = {};
-          const oldR = parseFloat(oldReading);
-          const newR = parseFloat(newReading);
-          const amount = parseFloat(amountLoaded);
+        const TrashIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+        );
 
-          if (!date) newErrors.date = 'Date is required';
-          if (!oldReading || isNaN(oldR) || oldR < 0) newErrors.oldReading = 'Must be a non-negative number';
-          if (!amountLoaded || isNaN(amount) || amount <= 0) newErrors.amountLoaded = 'Must be a positive number';
-          if (!newReading || isNaN(newR) || newR <= 0) newErrors.newReading = 'Must be a positive number';
-          if (!isNaN(oldR) && !isNaN(newR) && newR <= oldR) newErrors.newReading = 'New reading must be greater than old reading';
+        const AlertTriangleIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+        );
 
-          setErrors(newErrors);
-          return Object.keys(newErrors).length === 0;
+        const SortIcon = (props) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                <path d="m3 16 4 4 4-4"/>
+                <path d="M7 20V4"/>
+                <path d="m21 8-4-4-4 4"/>
+                <path d="M17 4v16"/>
+            </svg>
+        );
+
+        // =============================================
+        // CHART UTILS
+        // =============================================
+        const CHART_PADDING = { top: 20, right: 30, bottom: 45, left: 45 };
+        const CHART_SVG_WIDTH = 500;
+        const CHART_SVG_HEIGHT = 180;
+        const CHART_WIDTH = CHART_SVG_WIDTH - CHART_PADDING.left - CHART_PADDING.right;
+        const CHART_HEIGHT = CHART_SVG_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
+
+        const getXScale = (readings) => {
+            if (!readings || readings.length === 0) return () => CHART_PADDING.left;
+            const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            const minTime = new Date(chronoSorted[0].date).getTime();
+            const maxTime = new Date(chronoSorted[chronoSorted.length - 1].date).getTime();
+            const range = (maxTime - minTime) || 1;
+            return (time) => CHART_PADDING.left + ((new Date(time).getTime() - minTime) / range) * CHART_WIDTH;
         };
 
-        const handleSubmit = (e) => {
-          e.preventDefault();
-          if (validate()) {
-            onAdd({
-              date,
-              oldReading: parseFloat(oldReading),
-              amountLoaded: parseFloat(amountLoaded),
-              newReading: parseFloat(newReading),
-            });
-          }
-        };
-        
-        return (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 border border-gray-700 animate-fade-in">
-              <h2 className="text-2xl font-bold mb-4 text-white">Add New Reading</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <InputField
-                  id="date"
-                  label="Date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  error={errors.date}
-                />
-                <InputField
-                  id="oldReading"
-                  label="Old Reading (Units)"
-                  type="number"
-                  value={oldReading}
-                  onChange={(e) => setOldReading(e.target.value)}
-                  error={errors.oldReading}
-                  placeholder="Units before loading"
-                />
-                <InputField
-                  id="amountLoaded"
-                  label="Amount Loaded (R)"
-                  type="number"
-                  value={amountLoaded}
-                  onChange={(e) => setAmountLoaded(e.target.value)}
-                  error={errors.amountLoaded}
-                  placeholder="e.g., 200"
-                />
-                <InputField
-                  id="newReading"
-                  label="New Reading (Units)"
-                  type="number"
-                  value={newReading}
-                  onChange={(e) => setNewReading(e.target.value)}
-                  error={errors.newReading}
-                  placeholder="Units after loading"
-                />
-                <div className="flex justify-end gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-brand-blue-600 hover:bg-brand-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
-                  >
-                    Save Reading
-                  </button>
+        // =============================================
+        // COMPONENTS
+        // =============================================
+
+        const MetricCard = ({ icon, title, value, unit, color }) => (
+          <div className="bg-gray-800 p-4 rounded-xl flex items-center gap-4 shadow-lg border border-gray-700">
+            <div className={`p-3 rounded-full ${color}`}>{icon}</div>
+            <div className="overflow-hidden">
+              <p className="text-sm text-gray-400 truncate">{title}</p>
+              <p className="text-xl font-bold text-white whitespace-nowrap">
+                {value} <span className="text-xs font-normal text-gray-400">{unit}</span>
+              </p>
+            </div>
+          </div>
+        );
+
+        const TrendGraph = ({ readings, averageCostPerUnit }) => {
+            const chronoSortedReadings = useMemo(() => {
+                return [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            }, [readings]);
+
+            const chartData = useMemo(() => {
+                return chronoSortedReadings.map(r => ({
+                    date: r.date,
+                    costPerKl: r.newReading > r.oldReading ? r.amountLoaded / (r.newReading - r.oldReading) : 0,
+                }));
+            }, [chronoSortedReadings]);
+
+            if (chartData.length < 2) return null;
+
+            const yValues = chartData.map(d => d.costPerKl);
+            const rawMin = Math.min(...yValues, averageCostPerUnit);
+            const rawMax = Math.max(...yValues, averageCostPerUnit);
+            const buffer = (rawMax - rawMin) * 0.1 || 1.0;
+            const yMin = rawMin - buffer;
+            const yMax = rawMax + buffer;
+            const yRange = (yMax - yMin) || 1;
+
+            const getX = getXScale(readings);
+            const getY = (value) => CHART_PADDING.top + CHART_HEIGHT - ((value - yMin) / yRange) * CHART_HEIGHT;
+            const avgY = getY(averageCostPerUnit);
+
+            const pathData = chartData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${getX(d.date)} ${getY(d.costPerKl)}`).join(' ');
+
+            return (
+                <div className="bg-gray-800 p-4 rounded-xl mt-8 border border-gray-700">
+                    <h3 className="text-sm font-semibold text-gray-400 mb-4 px-2 uppercase tracking-wider">Cost per kl Trend</h3>
+                    <svg viewBox={`0 0 ${CHART_SVG_WIDTH} ${CHART_SVG_HEIGHT}`} className="w-full h-auto">
+                        <line x1={CHART_PADDING.left} y1={avgY} x2={CHART_SVG_WIDTH - CHART_PADDING.right} y2={avgY} strokeDasharray="4 4" stroke="#3b82f6" strokeWidth="1" opacity="0.5" />
+                        <path d={pathData} fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {chartData.map((d, i) => (
+                            <circle key={i} cx={getX(d.date)} cy={getY(d.costPerKl)} r="3" fill="#60a5fa" />
+                        ))}
+                    </svg>
                 </div>
-              </form>
-            </div>
-          </div>
-        );
-      };
-
-      // =============================================
-      // COMPONENTS/DATERANGEFILTER.TSX
-      // =============================================
-      const DateRangeFilter = ({ selectedRange, onSelectRange }) => {
-        const ranges = [
-            { key: 'all', label: 'All' },
-            { key: '6m', label: '6 Months' },
-            { key: '1y', label: '1 Year' }
-        ];
-
-        return (
-            <div className="mt-8 bg-gray-800 rounded-lg p-2 flex justify-center space-x-2 border border-gray-700 animate-fade-in">
-                {ranges.map(({ key, label }) => (
-                    <button
-                        key={key}
-                        onClick={() => onSelectRange(key)}
-                        className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors w-full sm:w-auto ${
-                            selectedRange === key
-                                ? 'bg-brand-blue-600 text-white shadow'
-                                : 'bg-transparent text-gray-400 hover:bg-gray-700 hover:text-white'
-                        }`}
-                        aria-pressed={selectedRange === key}
-                    >
-                        {label}
-                    </button>
-                ))}
-            </div>
-        );
-      };
-
-      // =============================================
-      // COMPONENTS/COSTTRENDCHART.TSX
-      // =============================================
-      const CostTrendChart = ({ data, averageCost, domain }) => {
-        const width = 500;
-        const height = 200;
-        const margin = { top: 20, right: 20, bottom: 40, left: 50 };
-        const innerWidth = width - margin.left - margin.right;
-        const innerHeight = height - margin.top - margin.bottom;
-
-        const values = useMemo(() => data.map(d => d.value), [data]);
-        const yMin = useMemo(() => data.length > 0 ? Math.min(...values) * 0.95 : 0, [values, data.length]);
-        const yMax = useMemo(() => data.length > 0 ? Math.max(...values) * 1.05 : 1, [values, data.length]);
-
-        const xScale = useCallback((date) => {
-            if (!domain) return 0;
-            const [minTime, maxTime] = [domain[0].getTime(), domain[1].getTime()];
-            if (maxTime === minTime) return margin.left + innerWidth / 2;
-            return margin.left + ((date.getTime() - minTime) / (maxTime - minTime)) * innerWidth;
-        }, [domain, innerWidth, margin.left]);
-        
-        const yScale = useCallback((value) => {
-            if (yMax === yMin) return margin.top + innerHeight / 2;
-            return margin.top + innerHeight - ((value - yMin) / (yMax - yMin)) * innerHeight;
-        }, [yMin, yMax, innerHeight, margin.top]);
-
-        const pathData = useMemo(() => {
-            if (data.length < 2) return '';
-            return data.map((d, i) => {
-                const x = xScale(new Date(d.date));
-                const y = yScale(d.value);
-                return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-            }).join(' ');
-        }, [data, xScale, yScale]);
-
-        const yAxisTicks = useMemo(() => {
-            if (yMin === yMax) return [yMin];
-            return Array.from({ length: 5 }, (_, i) => yMin + (i * (yMax - yMin)) / 4)
-        }, [yMin, yMax]);
-
-        const formatTickLabel = useCallback((date) => {
-            if (!domain) return '';
-            const [start, end] = domain;
-            const durationDays = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
-            if (durationDays > 365 * 1.5) return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }, [domain]);
-        
-        const xAxisTicks = useMemo(() => {
-            if (!domain) return [];
-            const [start, end] = domain;
-            const tickCount = Math.max(2, Math.floor(innerWidth / 80));
-            const ticks = [];
-            const interval = (end.getTime() - start.getTime()) / (tickCount - 1);
-            
-            for (let i = 0; i < tickCount; i++) {
-                const tickDate = new Date(start.getTime() + i * interval);
-                ticks.push({ date: tickDate, x: xScale(tickDate) });
-            }
-            return ticks;
-        }, [domain, innerWidth, xScale]);
-
-        return (
-            <div className="mt-4 bg-gray-800 rounded-lg p-4 border border-gray-700 animate-fade-in">
-              <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-200">Cost/Unit Trend</h3>
-                  {averageCost > 0 && (
-                      <p className="text-sm text-gray-400">
-                          Avg: <span className="font-bold text-white">R {averageCost.toFixed(2)}</span>
-                      </p>
-                  )}
-              </div>
-              <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" aria-labelledby="chart-title" role="img">
-                  <title id="chart-title">A line chart showing the trend of cost per unit of electricity over time.</title>
-                  <g aria-hidden="true">
-                      {/* Y-axis grid lines and labels */}
-                      {yAxisTicks.map((tick, i) => (
-                      <g key={i} transform={`translate(0, ${yScale(tick)})`}>
-                          <line x1={margin.left} x2={width - margin.right} stroke="currentColor" className="text-gray-600" strokeWidth="0.5" strokeDasharray="2,2" />
-                          <text x={margin.left - 8} y="3" textAnchor="end" fill="#e5e7eb" fontSize="10">
-                          {`R${tick.toFixed(2)}`}
-                          </text>
-                      </g>
-                      ))}
-                      
-                      {/* X-axis labels */}
-                      {xAxisTicks.map(({date, x}, i) => (
-                          <text key={i} x={x} y={height - margin.bottom + 15} textAnchor="middle" fill="#e5e7eb" fontSize="10">
-                              {formatTickLabel(date)}
-                          </text>
-                      ))}
-
-                      {data.length === 0 && (
-                          <text x={width / 2} y={height / 2} textAnchor="middle" fill="#9ca3af" fontSize="14" className="font-semibold">
-                              No Data For Selected Period
-                          </text>
-                      )}
-
-                      {data.length > 0 && (<React.Fragment>
-                          {/* Average Cost Line */}
-                          {averageCost > 0 && yMin < averageCost && averageCost < yMax && (
-                            <g>
-                              <line
-                                x1={margin.left}
-                                y1={yScale(averageCost)}
-                                x2={width - margin.right}
-                                y2={yScale(averageCost)}
-                                stroke="#60a5fa"
-                                strokeWidth="1.5"
-                                strokeDasharray="4,4"
-                              />
-                              <title>{`Average Cost: R ${averageCost.toFixed(2)}`}</title>
-                            </g>
-                          )}
-
-                          {/* Line Path */}
-                          <path d={pathData} fill="none" stroke="#3b82f6" strokeWidth="2" />
-                          
-                          {/* Data points */}
-                          {data.map((d, i) => (
-                          <g key={i} transform={`translate(${xScale(new Date(d.date))}, ${yScale(d.value)})`}>
-                            <circle r="3" fill="#3b82f6" stroke="#1f2937" strokeWidth="2">
-                               <title>{`R ${d.value.toFixed(2)} on ${new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`}</title>
-                            </circle>
-                          </g>
-                          ))}
-                      </React.Fragment>)}
-                  </g>
-              </svg>
-            </div>
-        );
-      };
-
-      // =============================================
-      // COMPONENTS/CONSUMPTIONTRENDCHART.TSX
-      // =============================================
-      const ConsumptionTrendChart = ({ data, averageConsumption, domain }) => {
-        const width = 500;
-        const height = 200;
-        const margin = { top: 20, right: 20, bottom: 40, left: 50 };
-        const innerWidth = width - margin.left - margin.right;
-        const innerHeight = height - margin.top - margin.bottom;
-
-        const values = useMemo(() => data.map(d => d.value), [data]);
-        const yMin = useMemo(() => data.length > 0 ? Math.min(...values) * 0.95 : 0, [values, data.length]);
-        const yMax = useMemo(() => data.length > 0 ? Math.max(...values) * 1.05 : 1, [values, data.length]);
-
-        const xScale = useCallback((date) => {
-            if (!domain) return 0;
-            const [minTime, maxTime] = [domain[0].getTime(), domain[1].getTime()];
-            if (maxTime === minTime) return margin.left + innerWidth / 2;
-            return margin.left + ((date.getTime() - minTime) / (maxTime - minTime)) * innerWidth;
-        }, [domain, innerWidth, margin.left]);
-        
-        const yScale = useCallback((value) => {
-            if (yMax === yMin) return margin.top + innerHeight / 2;
-            return margin.top + innerHeight - ((value - yMin) / (yMax - yMin)) * innerHeight;
-        }, [yMin, yMax, innerHeight, margin.top]);
-
-        const pathData = useMemo(() => {
-            if (data.length < 2) return '';
-            return data.map((d, i) => {
-                const x = xScale(new Date(d.date));
-                const y = yScale(d.value);
-                return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
-            }).join(' ');
-        }, [data, xScale, yScale]);
-
-        const yAxisTicks = useMemo(() => {
-            if (yMin === yMax) return [yMin];
-            return Array.from({ length: 5 }, (_, i) => yMin + (i * (yMax - yMin)) / 4)
-        }, [yMin, yMax]);
-        
-        const formatTickLabel = useCallback((date) => {
-            if (!domain) return '';
-            const [start, end] = domain;
-            const durationDays = (end.getTime() - start.getTime()) / (1000 * 3600 * 24);
-            if (durationDays > 365 * 1.5) return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }, [domain]);
-        
-        const xAxisTicks = useMemo(() => {
-            if (!domain) return [];
-            const [start, end] = domain;
-            const tickCount = Math.max(2, Math.floor(innerWidth / 80));
-            const ticks = [];
-            const interval = (end.getTime() - start.getTime()) / (tickCount - 1);
-            
-            for (let i = 0; i < tickCount; i++) {
-                const tickDate = new Date(start.getTime() + i * interval);
-                ticks.push({ date: tickDate, x: xScale(tickDate) });
-            }
-            return ticks;
-        }, [domain, innerWidth, xScale]);
-
-        return (
-            <div className="mt-4 bg-gray-800 rounded-lg p-4 border border-gray-700 animate-fade-in">
-              <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-200">Consumption Trend (Units/Day)</h3>
-                  {averageConsumption > 0 && (
-                      <p className="text-sm text-gray-400">
-                          Avg: <span className="font-bold text-white">{averageConsumption.toFixed(2)}</span> units/day
-                      </p>
-                  )}
-              </div>
-              <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" aria-labelledby="consumption-chart-title" role="img">
-                  <title id="consumption-chart-title">A line chart showing the trend of daily electricity consumption over time.</title>
-                  <g aria-hidden="true">
-                      {/* Y-axis grid lines and labels */}
-                      {yAxisTicks.map((tick, i) => (
-                      <g key={i} transform={`translate(0, ${yScale(tick)})`}>
-                          <line x1={margin.left} x2={width - margin.right} stroke="currentColor" className="text-gray-600" strokeWidth="0.5" strokeDasharray="2,2" />
-                          <text x={margin.left - 8} y="3" textAnchor="end" fill="#e5e7eb" fontSize="10">
-                            {tick.toFixed(2)}
-                          </text>
-                      </g>
-                      ))}
-                      
-                      {/* X-axis labels */}
-                      {xAxisTicks.map(({date, x}, i) => (
-                          <text key={i} x={x} y={height - margin.bottom + 15} textAnchor="middle" fill="#e5e7eb" fontSize="10">
-                              {formatTickLabel(date)}
-                          </text>
-                      ))}
-
-                      {data.length === 0 && (
-                          <text x={width / 2} y={height / 2} textAnchor="middle" fill="#9ca3af" fontSize="14" className="font-semibold">
-                              No Data For Selected Period
-                          </text>
-                      )}
-
-                      {data.length > 0 && (<React.Fragment>
-                          {/* Average Consumption Line */}
-                          {averageConsumption > 0 && yMin < averageConsumption && averageConsumption < yMax && (
-                            <g>
-                              <line
-                                x1={margin.left}
-                                y1={yScale(averageConsumption)}
-                                x2={width - margin.right}
-                                y2={yScale(averageConsumption)}
-                                stroke="#f87171"
-                                strokeWidth="1.5"
-                                strokeDasharray="4,4"
-                              />
-                              <title>{`Average Consumption: ${averageConsumption.toFixed(2)} units/day`}</title>
-                            </g>
-                          )}
-
-                          {/* Line Path */}
-                          <path d={pathData} fill="none" stroke="#ef4444" strokeWidth="2" />
-                          
-                          {/* Data points */}
-                          {data.map((d, i) => (
-                          <g key={i} transform={`translate(${xScale(new Date(d.date))}, ${yScale(d.value)})`}>
-                            <circle r="3" fill="#ef4444" stroke="#1f2937" strokeWidth="2">
-                               <title>{`${d.value.toFixed(2)} units/day on ${new Date(d.date).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}`}</title>
-                            </circle>
-                          </g>
-                          ))}
-                      </React.Fragment>)}
-                  </g>
-              </svg>
-            </div>
-        );
-      };
-
-      // =============================================
-      // APP.TSX
-      // =============================================
-      const TimelineItem = ({ reading, isFirst, isLast, unitsConsumed, daysSinceLast }) => {
-        const date = new Date(reading.date);
-        const formattedDate = date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-
-        return (
-          <div className="relative pl-8 sm:pl-10 py-4">
-            {!isLast && <div className="absolute left-4 sm:left-5 top-5 bottom-0 w-0.5 bg-gray-700"></div>}
-            <div className="absolute left-0 sm:left-1.5 top-4 h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-brand-blue-500 flex items-center justify-center ring-4 ring-gray-800">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            </div>
-            <div className="bg-gray-800 rounded-lg p-4 shadow-md border border-gray-700">
-              <div className="flex justify-between items-center mb-2">
-                <p className="font-bold text-lg text-white">{formattedDate}</p>
-                <span className="text-xl font-bold text-brand-blue-400">R {reading.amountLoaded.toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
-                <p>Units Loaded: <span className="font-medium text-white">{(reading.newReading - reading.oldReading).toFixed(2)}</span></p>
-                <p>Cost/Unit: <span className="font-medium text-white">R {(reading.amountLoaded / (reading.newReading - reading.oldReading)).toFixed(2)}</span></p>
-                <p>Old Reading: <span className="font-medium text-white">{reading.oldReading.toFixed(2)}</span></p>
-                <p>New Reading: <span className="font-medium text-white">{reading.newReading.toFixed(2)}</span></p>
-                {unitsConsumed !== null && daysSinceLast !== null && (
-                  <p className="col-span-2 mt-2 pt-2 border-t border-gray-700">
-                      Consumed <span className="font-bold text-yellow-400">{unitsConsumed.toFixed(2)}</span> units over <span className="font-bold text-yellow-400">{daysSinceLast}</span> days.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      };
-
-      const App = () => {
-        const [readings, setReadings] = useState([]);
-        const [isModalOpen, setIsModalOpen] = useState(false);
-        const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-        const [sortOrder, setSortOrder] = useState('desc');
-        const [timeRange, setTimeRange] = useState('all'); // 'all', '6m', '1y'
-
-        useEffect(() => {
-          try {
-            const storedReadings = localStorage.getItem('electricityReadings');
-            if (storedReadings) {
-              setReadings(JSON.parse(storedReadings));
-            }
-          } catch (error) {
-            console.error("Failed to load or parse readings from localStorage", error);
-          }
-        }, []);
-
-        useEffect(() => {
-          try {
-            localStorage.setItem('electricityReadings', JSON.stringify(readings));
-          } catch (error) {
-            console.error("Failed to save readings to localStorage", error);
-          }
-        }, [readings]);
-
-        const sortedReadings = useMemo(() => {
-          return [...readings].sort((a, b) => {
-            const timeA = new Date(a.date).getTime();
-            const timeB = new Date(b.date).getTime();
-            return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
-          });
-        }, [readings, sortOrder]);
-
-        const metrics = useMemo(() => {
-          if (readings.length === 0) {
-            return {
-              dailyExpense: 0,
-              dailyConsumption: 0,
-              costPerUnit: 0,
-              monthlyCost: 0,
-              monthlyConsumption: 0,
-              estimatedDaysLeft: 0,
-              estimatedDaysTo100: 0,
-              calculatedCurrentUnits: 0,
-              latestDailyConsumption: 0,
-              latestDailyExpense: 0,
-              latestMonthlyConsumption: 0,
-              latestMonthlyCost: 0
-            };
-          }
-        
-          const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-          
-          let totalUnitsConsumed = 0;
-          let totalDaysForConsumption = 0;
-          let latestDailyConsumption = 0;
-
-          if (chronoSorted.length > 1) {
-              for (let i = 0; i < chronoSorted.length - 1; i++) {
-                  const current = chronoSorted[i];
-                  const next = chronoSorted[i+1];
-                  
-                  // Calculate units consumed between the end of the current purchase and the start of the next purchase
-                  const unitsUsed = current.newReading - next.oldReading;
-                  const timeDiff = new Date(next.date).getTime() - new Date(current.date).getTime();
-                  const daysDiff = timeDiff / (1000 * 3600 * 24);
-
-                  if (unitsUsed > 0 && daysDiff > 0) {
-                      totalUnitsConsumed += unitsUsed;
-                      totalDaysForConsumption += daysDiff;
-                      
-                      // Identify if this is the last interval for "Latest" stats
-                      if (i === chronoSorted.length - 2) {
-                          latestDailyConsumption = unitsUsed / daysDiff;
-                      }
-                  }
-              }
-          }
-
-          const dailyConsumption = totalDaysForConsumption > 0 ? totalUnitsConsumed / totalDaysForConsumption : 0;
-
-          // Cost Per Unit (Average)
-          const totalRands = readings.reduce((sum, r) => sum + r.amountLoaded, 0);
-          const totalUnitsLoaded = readings.reduce((sum, r) => sum + (r.newReading - r.oldReading), 0);
-          const costPerUnit = totalUnitsLoaded > 0 ? totalRands / totalUnitsLoaded : 0;
-
-          // Calculate Daily Cost (Average)
-          // Based on Average Daily Consumption * Average Cost Per Unit
-          const dailyExpense = dailyConsumption * costPerUnit;
-
-          // Monthly Estimates (based on 30 days)
-          const monthlyCost = dailyExpense * 30;
-          const monthlyConsumption = dailyConsumption * 30;
-
-          // Latest Calculations
-          const latestReading = chronoSorted[chronoSorted.length-1];
-          const latestUnitsLoaded = latestReading.newReading - latestReading.oldReading;
-          const latestCostPerUnit = latestUnitsLoaded > 0 ? latestReading.amountLoaded / latestUnitsLoaded : 0;
-          
-          const latestDailyExpense = latestCostPerUnit * latestDailyConsumption;
-          const latestMonthlyConsumption = latestDailyConsumption * 30;
-          const latestMonthlyCost = latestDailyExpense * 30;
-
-          // Current Units Estimate
-          const now = new Date();
-          const daysSinceLastReading = (now.getTime() - new Date(latestReading.date).getTime()) / (1000 * 3600 * 24);
-          const calculatedCurrentUnits = Math.max(0, latestReading.newReading - (dailyConsumption * daysSinceLastReading));
-          
-          // Estimated Days Until Refill
-          const estimatedDaysLeft = dailyConsumption > 0 ? calculatedCurrentUnits / dailyConsumption : Infinity;
-          const estimatedDaysTo100 = dailyConsumption > 0 ? Math.max(0, (calculatedCurrentUnits - 100) / dailyConsumption) : Infinity;
-
-          return { 
-            dailyExpense, 
-            dailyConsumption, 
-            costPerUnit, 
-            monthlyCost, 
-            estimatedDaysLeft,
-            estimatedDaysTo100,
-            calculatedCurrentUnits, 
-            monthlyConsumption,
-            latestDailyConsumption,
-            latestDailyExpense,
-            latestMonthlyConsumption,
-            latestMonthlyCost
-          };
-        }, [readings]);
-
-        const costChartData = useMemo(() => {
-          if (readings.length === 0) return [];
-          const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-          return chronoSorted.map(r => {
-            const unitsLoaded = r.newReading - r.oldReading;
-            if (unitsLoaded <= 0) return null;
-            return {
-              date: r.date,
-              value: r.amountLoaded / unitsLoaded
-            };
-          }).filter(Boolean);
-        }, [readings]);
-
-        const consumptionChartData = useMemo(() => {
-          if (readings.length < 2) return [];
-          const chronoSorted = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-          
-          const chartData = [];
-          for (let i = 1; i < chronoSorted.length; i++) {
-            const current = chronoSorted[i];
-            const previous = chronoSorted[i - 1];
-            
-            const unitsConsumed = previous.newReading - current.oldReading;
-            const timeDiff = new Date(current.date).getTime() - new Date(previous.date).getTime();
-            const daysSinceLast = timeDiff / (1000 * 3600 * 24);
-            
-            if (daysSinceLast > 0 && unitsConsumed >= 0) {
-              chartData.push({
-                date: current.date,
-                value: unitsConsumed / daysSinceLast,
-              });
-            }
-          }
-          return chartData;
-        }, [readings]);
-
-        const { filteredCostData, filteredConsumptionData, sharedDomain } = useMemo(() => {
-            const now = new Date();
-            const allDates = [...costChartData.map(d => new Date(d.date).getTime()), ...consumptionChartData.map(d => new Date(d.date).getTime())];
-
-            if (allDates.length === 0) {
-                return {
-                    filteredCostData: [],
-                    filteredConsumptionData: [],
-                    sharedDomain: [new Date(now.getFullYear(), now.getMonth() -1, now.getDate()), now]
-                };
-            }
-
-            const minDateOverall = new Date(Math.min(...allDates));
-            const maxDateOverall = new Date(Math.max(...allDates));
-            
-            let domainStart, domainEnd;
-            
-            if (timeRange === 'all') {
-                domainStart = minDateOverall;
-                domainEnd = maxDateOverall;
-            } else {
-                const monthsToSubtract = timeRange === '6m' ? 6 : 12;
-                domainStart = new Date(new Date().setMonth(now.getMonth() - monthsToSubtract));
-                domainEnd = now;
-            }
-
-            if (domainStart.getTime() >= domainEnd.getTime()) {
-                 domainStart = new Date(new Date(domainEnd).setMonth(domainEnd.getMonth() - 1));
-            }
-
-            const costDataInRange = costChartData.filter(d => {
-                const date = new Date(d.date);
-                return date >= domainStart && date <= domainEnd;
-            });
-            const consumptionDataInRange = consumptionChartData.filter(d => {
-                const date = new Date(d.date);
-                return date >= domainStart && date <= domainEnd;
-            });
-
-            return {
-                filteredCostData: costDataInRange,
-                filteredConsumptionData: consumptionDataInRange,
-                sharedDomain: [domainStart, domainEnd],
-            };
-        }, [costChartData, consumptionChartData, timeRange]);
-
-        const handleAddReading = useCallback((newReading) => {
-          setReadings(prev => [...prev, { ...newReading, id: new Date().toISOString() }]);
-          setIsModalOpen(false);
-        }, []);
-
-        const handleClearData = useCallback(() => {
-          setIsConfirmModalOpen(true);
-        }, []);
-
-        const handleConfirmClearData = useCallback(() => {
-          setReadings([]);
-          setIsConfirmModalOpen(false);
-        }, []);
-
-        const toggleSortOrder = useCallback(() => {
-          setSortOrder(prev => (prev === 'desc' ? 'asc' : 'desc'));
-        }, []);
-        
-        const getTimelineData = (index) => {
-          let current, previous;
-
-          if (sortOrder === 'desc') {
-            if (index >= sortedReadings.length - 1) return { unitsConsumed: null, daysSinceLast: null };
-            current = sortedReadings[index]; // Is newer
-            previous = sortedReadings[index + 1]; // Is older
-          } else { // asc
-            if (index === 0) return { unitsConsumed: null, daysSinceLast: null };
-            current = sortedReadings[index]; // Is newer
-            previous = sortedReadings[index - 1]; // Is older
-          }
-
-          const unitsConsumed = previous.newReading - current.oldReading;
-          const timeDiff = new Date(current.date).getTime() - new Date(previous.date).getTime();
-          const daysSinceLast = Math.round(timeDiff / (1000 * 3600 * 24));
-          
-          return { unitsConsumed, daysSinceLast };
+            );
         };
 
-        let lastMonthYear = '';
-
-        return (
-          <div className="min-h-screen bg-gray-900 text-gray-100 font-sans p-4 sm:p-6">
-            <div className="max-w-2xl mx-auto">
-              <header className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold text-white">
-                  <span className="text-brand-blue-400">Prepaid</span> Electricity
-                </h1>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="bg-brand-blue-600 hover:bg-brand-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform transform hover:scale-105 shadow-lg"
-                >
-                  <PlusIcon className="w-5 h-5" />
-                  <span>Add</span>
-                </button>
-              </header>
-
-              <main>
-                <MetricsDashboard metrics={metrics} />
-                
-                {readings.length > 1 && (
-                    <React.Fragment>
-                        <DateRangeFilter selectedRange={timeRange} onSelectRange={setTimeRange} />
-                        <CostTrendChart data={filteredCostData} domain={sharedDomain} averageCost={metrics.costPerUnit} />
-                        <ConsumptionTrendChart data={filteredConsumptionData} domain={sharedDomain} averageConsumption={metrics.dailyConsumption} />
-                    </React.Fragment>
-                )}
-                
-                <div className="flex justify-between items-center mt-8 mb-4 border-b-2 border-gray-700 pb-2">
-                  <h2 className="text-2xl font-semibold text-gray-200">
-                    Purchase History
-                  </h2>
-                  {readings.length > 1 && (
-                    <button
-                      onClick={toggleSortOrder}
-                      className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors rounded-md px-2 py-1 hover:bg-gray-800"
-                      aria-label={`Sort by ${sortOrder === 'desc' ? 'Oldest First' : 'Newest First'}`}
-                    >
-                      <SortIcon className="w-4 h-4" />
-                      <span>{sortOrder === 'desc' ? 'Newest First' : 'Oldest First'}</span>
-                    </button>
-                  )}
-                </div>
-                
-                {sortedReadings.length === 0 ? (
-                  <div className="text-center py-10 bg-gray-800 rounded-lg">
-                      <p className="text-gray-400">No readings yet.</p>
-                      <p className="text-gray-500 mt-2">Click the "Add" button to get started!</p>
-                  </div>
-                ) : (
-                  <div>
-                    {sortedReadings.map((reading, index) => {
-                      const date = new Date(reading.date);
-                      const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                      const showMonthHeader = monthYear !== lastMonthYear;
-                      if (showMonthHeader) {
-                        lastMonthYear = monthYear;
-                      }
-                      const timelineData = getTimelineData(index);
-
-                      return (
-                        <React.Fragment key={reading.id}>
-                          {showMonthHeader && (
-                            <div className="flex items-center my-4">
-                              <div className="flex-grow border-t border-gray-700"></div>
-                              <span className="flex-shrink mx-4 text-sm font-semibold text-brand-blue-400 tracking-wider">{monthYear.toUpperCase()}</span>
-                              <div className="flex-grow border-t border-gray-700"></div>
-                            </div>
-                          )}
-                          <TimelineItem 
-                            reading={reading} 
-                            isFirst={index === 0} 
-                            isLast={index === sortedReadings.length - 1}
-                            unitsConsumed={timelineData.unitsConsumed}
-                            daysSinceLast={timelineData.daysSinceLast}
-                          />
-                        </React.Fragment>
-                      );
-                    })}
-                  </div>
-                )}
-              </main>
-
-              {readings.length > 0 && (
-                <footer className="text-center mt-8 py-4 border-t border-gray-800">
-                  <button
-                    onClick={handleClearData}
-                    className="text-gray-500 hover:text-red-500 hover:bg-gray-800 font-semibold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors mx-auto"
-                    aria-label="Clear all electricity reading data"
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                    <span>Clear All Data</span>
-                  </button>
-                </footer>
-              )}
-            </div>
-            <AddReadingModal
-              isOpen={isModalOpen}
-              onClose={() => setIsModalOpen(false)}
-              onAdd={handleAddReading}
-              lastReading={sortedReadings[0]}
-            />
-            <ConfirmModal
-              isOpen={isConfirmModalOpen}
-              onClose={() => setIsConfirmModalOpen(false)}
-              onConfirm={handleConfirmClearData}
-              title="Delete All Data"
-            >
-              <p>Are you sure you want to permanently delete all readings? This action cannot be undone.</p>
-            </ConfirmModal>
+        const InputField = ({ id, label, type, value, onChange, error, placeholder = '' }) => (
+          <div>
+              <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+              <input
+                id={id} type={type} value={value} onChange={onChange} placeholder={placeholder}
+                className={`w-full bg-gray-700 text-white rounded-md p-2 border ${error ? 'border-red-500' : 'border-gray-600'} focus:ring-2 focus:ring-brand-blue-500 outline-none`}
+              />
+              {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
           </div>
         );
-      };
 
-      // =============================================
-      // INDEX.TSX
-      // =============================================
-      const rootElement = document.getElementById('root');
-      if (!rootElement) {
-        throw new Error("Could not find root element to mount to");
-      }
+        // =============================================
+        // MAIN APP
+        // =============================================
+        const App = () => {
+            const [readings, setReadings] = useState([]);
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [formData, setFormData] = useState({ date: '', oldReading: '', amountLoaded: '', newReading: '' });
+            const [errors, setErrors] = useState({});
+            const [sortOrder, setSortOrder] = useState('desc');
 
-      const root = ReactDOM.createRoot(rootElement);
-      root.render(
-        <React.StrictMode>
-          <App />
-        </React.StrictMode>
-      );
+            useEffect(() => {
+                const stored = localStorage.getItem('waterReadings');
+                if (stored) setReadings(JSON.parse(stored));
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem('waterReadings', JSON.stringify(readings));
+            }, [readings]);
+
+            const metrics = useMemo(() => {
+                if (readings.length < 2) return { dailyExpense: 0, dailyConsumption: 0, costPerUnit: 0, monthlyCost: 0, monthlyConsumption: 0, estimatedDaysLeft: Infinity, calculatedCurrentUnits: readings.length ? readings[0].newReading : 0 };
+                const chrono = [...readings].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                let totalU = 0, totalD = 0;
+                for (let i = 0; i < chrono.length - 1; i++) {
+                    const consumed = chrono[i].newReading - chrono[i+1].oldReading;
+                    if (consumed > 0) {
+                        totalU += consumed;
+                        totalD += (new Date(chrono[i+1].date).getTime() - new Date(chrono[i].date).getTime()) / 86400000;
+                    }
+                }
+                const totalR = readings.reduce((s, r) => s + r.amountLoaded, 0);
+                const totalL = readings.reduce((s, r) => s + (r.newReading - r.oldReading), 0);
+                const cpU = totalL > 0 ? totalR / totalL : 0;
+                const dC = totalD > 0 ? totalU / totalD : 0;
+                const latest = chrono[chrono.length-1];
+                const daysSince = Math.max(0, (Date.now() - new Date(latest.date).getTime()) / 86400000);
+                const currU = Math.max(0, latest.newReading - (dC * daysSince));
+                return { dailyExpense: dC * cpU, dailyConsumption: dC, costPerUnit: cpU, monthlyCost: dC * cpU * 30.44, monthlyConsumption: dC * 30.44, estimatedDaysLeft: dC > 0 ? currU / dC : Infinity, calculatedCurrentUnits: currU };
+            }, [readings]);
+
+            const sortedReadings = useMemo(() => {
+                return [...readings].sort((a, b) => sortOrder === 'desc' ? new Date(b.date) - new Date(a.date) : new Date(a.date) - new Date(b.date));
+            }, [readings, sortOrder]);
+
+            const handleAdd = (e) => {
+                e.preventDefault();
+                const newErrors = {};
+                const { date, oldReading, amountLoaded, newReading } = formData;
+                if (!date) newErrors.date = 'Required';
+                if (isNaN(oldReading) || oldReading < 0) newErrors.oldReading = 'Invalid';
+                if (isNaN(amountLoaded) || amountLoaded <= 0) newErrors.amountLoaded = 'Invalid';
+                if (isNaN(newReading) || newReading <= oldReading) newErrors.newReading = 'Must be > Old';
+                
+                if (Object.keys(newErrors).length === 0) {
+                    setReadings([...readings, { ...formData, id: Date.now(), 
+                        oldReading: parseFloat(oldReading), 
+                        amountLoaded: parseFloat(amountLoaded), 
+                        newReading: parseFloat(newReading) 
+                    }]);
+                    setIsModalOpen(false);
+                    setFormData({ date: '', oldReading: '', amountLoaded: '', newReading: '' });
+                } else setErrors(newErrors);
+            };
+
+            return (
+                <div className="max-w-2xl mx-auto p-4 sm:p-6 min-h-screen">
+                    <header className="flex justify-between items-center mb-8">
+                        <h1 className="text-3xl font-bold text-white"><span className="text-brand-blue-400">Prepaid</span> Water</h1>
+                        <button onClick={() => setIsModalOpen(true)} className="bg-brand-blue-600 hover:bg-brand-blue-700 p-2 px-4 rounded-lg flex items-center gap-2 transition-all shadow-lg active:scale-95">
+                            <PlusIcon className="w-5 h-5" /> <span>Add Refill</span>
+                        </button>
+                    </header>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                        <MetricCard icon={<GlassWaterIcon className="w-6 h-6"/>} title="Current Balance" value={metrics.calculatedCurrentUnits.toFixed(2)} unit="kl" color="bg-green-500/80"/>
+                        <MetricCard icon={<ClockIcon className="w-6 h-6"/>} title="Est. Refill In" value={isFinite(metrics.estimatedDaysLeft) ? Math.floor(metrics.estimatedDaysLeft) : '∞'} unit="days" color="bg-yellow-500/80"/>
+                        <MetricCard icon={<DropletIcon className="w-6 h-6"/>} title="Daily Use" value={metrics.dailyConsumption.toFixed(2)} unit="kl" color="bg-blue-500/80"/>
+                        <MetricCard icon={<DollarSignIcon className="w-6 h-6"/>} title="Daily Cost" value={`R ${metrics.dailyExpense.toFixed(2)}`} unit="" color="bg-red-500/80"/>
+                        <MetricCard icon={<CalendarIcon className="w-6 h-6"/>} title="Monthly Cost" value={`R ${metrics.monthlyCost.toFixed(2)}`} unit="" color="bg-indigo-500/80"/>
+                        <MetricCard icon={<TrendingUpIcon className="w-6 h-6"/>} title="Cost / kl" value={`R ${metrics.costPerUnit.toFixed(2)}`} unit="" color="bg-purple-500/80"/>
+                    </div>
+
+                    <TrendGraph readings={readings} averageCostPerUnit={metrics.costPerUnit} />
+
+                    <div className="mt-12">
+                        <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                            <h2 className="text-xl font-bold text-gray-200">Refill History</h2>
+                            <button onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')} className="text-gray-400 hover:text-white flex items-center gap-1 text-sm">
+                                <SortIcon className="w-4 h-4" /> {sortOrder === 'desc' ? 'Newest' : 'Oldest'}
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            {sortedReadings.map((r, i) => (
+                                <div key={r.id} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex justify-between items-center animate-fade-in">
+                                    <div>
+                                        <p className="text-sm text-gray-400">{new Date(r.date).toLocaleDateString()}</p>
+                                        <p className="font-bold text-lg text-white">R {r.amountLoaded.toFixed(2)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-xs text-gray-400 uppercase">Usage Span</p>
+                                        <p className="text-brand-blue-400 font-medium">{(r.newReading - r.oldReading).toFixed(2)} kl</p>
+                                    </div>
+                                    <button onClick={() => setReadings(readings.filter(rd => rd.id !== r.id))} className="text-gray-600 hover:text-red-500 p-2">
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))}
+                            {readings.length === 0 && <p className="text-center text-gray-500 py-10">No readings yet. Add your first refill to start tracking.</p>}
+                        </div>
+                    </div>
+
+                    {isModalOpen && (
+                        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                            <form onSubmit={handleAdd} className="bg-gray-800 w-full max-w-md p-6 rounded-2xl border border-gray-700 shadow-2xl animate-fade-in space-y-4">
+                                <h2 className="text-2xl font-bold text-white mb-6">New Refill</h2>
+                                <InputField id="date" label="Refill Date" type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} error={errors.date} />
+                                <InputField id="oldReading" label="Units Before (kl)" type="number" step="0.01" value={formData.oldReading} onChange={e => setFormData({...formData, oldReading: e.target.value})} error={errors.oldReading} placeholder="0.00" />
+                                <InputField id="amountLoaded" label="Cost (Rands)" type="number" step="0.01" value={formData.amountLoaded} onChange={e => setFormData({...formData, amountLoaded: e.target.value})} error={errors.amountLoaded} placeholder="200.00" />
+                                <InputField id="newReading" label="Units After (kl)" type="number" step="0.01" value={formData.newReading} onChange={e => setFormData({...formData, newReading: e.target.value})} error={errors.newReading} placeholder="10.00" />
+                                <div className="flex gap-4 pt-4">
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-700 p-3 rounded-xl hover:bg-gray-600 transition">Cancel</button>
+                                    <button type="submit" className="flex-1 bg-brand-blue-600 p-3 rounded-xl font-bold hover:bg-brand-blue-500 transition">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
-  </body>
+</body>
 </html>
